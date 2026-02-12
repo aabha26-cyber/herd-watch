@@ -1,0 +1,10 @@
+{
+  "type": "Feature",
+  "properties": { "name": "South Sudan" },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [[
+      [23.5, 3.5], [36, 3.5], [36, 12], [23.5, 12], [23.5, 3.5]
+    ]]
+  }
+}

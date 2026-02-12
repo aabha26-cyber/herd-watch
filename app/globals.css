@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --map-bg: #0f1115;
+  --panel-bg: rgba(26, 29, 36, 0.95);
+  --border: rgba(255, 255, 255, 0.08);
+}
+
+html,
+body {
+  height: 100%;
+  background: var(--map-bg);
+}
+
+/* Leaflet: satellite base shown as-is; container font */
+.leaflet-container { font-family: inherit; }
