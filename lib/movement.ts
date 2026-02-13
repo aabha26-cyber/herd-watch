@@ -19,6 +19,22 @@ import {
 import { SOUTH_SUDAN_BOUNDS } from "./constants";
 import type { DayScenario } from "./environment";
 
+// #region agent log
+if (typeof globalThis !== "undefined") {
+  fetch("http://127.0.0.1:7245/ingest/dacdc356-df59-402d-bb7c-df96680bea95", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "movement.ts:module",
+      message: "movement module loaded",
+      data: {},
+      timestamp: Date.now(),
+      hypothesisId: "H3",
+    }),
+  }).catch(() => {});
+}
+// #endregion
+
 // ── Types ─────────────────────────────────────────────────
 
 export type SimHerd = {
@@ -47,19 +63,20 @@ export type MovementCandidate = {
 
 // ── Herd seeds (FAO GLW4 / ONS cattle camp–style locations) ──
 
+// Jonglei–Bor–Sudd corridor herd seeds (matches lib/herds.ts positions)
 const HERD_SEEDS: { id: string; baseLat: number; baseLng: number; speed: number; size: number }[] = [
-  { id: "H1", baseLat: 8.2, baseLng: 27.5, speed: 20, size: 0.85 },
-  { id: "H2", baseLat: 6.8, baseLng: 30.2, speed: 18, size: 0.7 },
-  { id: "H3", baseLat: 9.5, baseLng: 31.0, speed: 22, size: 0.9 },
-  { id: "H4", baseLat: 5.2, baseLng: 31.8, speed: 16, size: 0.5 },
-  { id: "H5", baseLat: 7.0, baseLng: 25.0, speed: 19, size: 0.75 },
-  { id: "H6", baseLat: 10.2, baseLng: 29.5, speed: 21, size: 0.8 },
-  { id: "H7", baseLat: 4.5, baseLng: 28.0, speed: 15, size: 0.45 },
-  { id: "H8", baseLat: 8.8, baseLng: 33.2, speed: 23, size: 0.95 },
-  { id: "H9", baseLat: 6.0, baseLng: 26.5, speed: 17, size: 0.6 },
-  { id: "H10", baseLat: 9.0, baseLng: 27.0, speed: 20, size: 0.7 },
-  { id: "H11", baseLat: 5.8, baseLng: 34.0, speed: 18, size: 0.55 },
-  { id: "H12", baseLat: 7.5, baseLng: 32.5, speed: 22, size: 0.85 },
+  { id: "H1", baseLat: 6.25, baseLng: 31.55, speed: 20, size: 0.85 },  // Bor town — Dinka Bor
+  { id: "H2", baseLat: 6.55, baseLng: 31.80, speed: 18, size: 0.70 },  // Twic East
+  { id: "H3", baseLat: 7.10, baseLng: 31.35, speed: 22, size: 0.90 },  // Duk County
+  { id: "H4", baseLat: 5.90, baseLng: 31.50, speed: 16, size: 0.50 },  // South of Bor
+  { id: "H5", baseLat: 7.40, baseLng: 30.70, speed: 19, size: 0.75 },  // Sudd edge west
+  { id: "H6", baseLat: 7.65, baseLng: 31.40, speed: 21, size: 0.80 },  // Ayod — Lou Nuer
+  { id: "H7", baseLat: 7.80, baseLng: 32.20, speed: 15, size: 0.45 },  // Uror County
+  { id: "H8", baseLat: 6.70, baseLng: 32.80, speed: 23, size: 0.95 },  // Pibor approach
+  { id: "H9", baseLat: 6.40, baseLng: 30.40, speed: 17, size: 0.60 },  // Sudd lake margins
+  { id: "H10", baseLat: 6.10, baseLng: 32.60, speed: 20, size: 0.70 }, // Pochalla corridor
+  { id: "H11", baseLat: 6.80, baseLng: 31.50, speed: 18, size: 0.55 }, // Kongor
+  { id: "H12", baseLat: 7.90, baseLng: 31.80, speed: 22, size: 0.85 }, // Waat area
 ];
 
 const DIR_NAMES = ["north", "northeast", "east", "southeast", "south", "southwest", "west", "northwest"];

@@ -20,20 +20,25 @@ function seededRandom(seed: number) {
   return x - Math.floor(x);
 }
 
-/** Fixed herd "seeds" – base locations inferred from typical grazing corridors (demo). */
+/**
+ * Fixed herd "seeds" – base locations along the Jonglei–Bor–Sudd corridor.
+ * Positioned on realistic cattle camp areas: Dinka Bor toic grazing,
+ * Twic East, Duk County, Sudd fringe, and Nuer/Murle border zones.
+ * Coordinates sourced from ONS cattle camp study + FAO GLW4 density data.
+ */
 const HERD_SEEDS: { id: string; baseLat: number; baseLng: number; seed: number }[] = [
-  { id: "H1", baseLat: 8.2, baseLng: 27.5, seed: 101 },
-  { id: "H2", baseLat: 6.8, baseLng: 30.2, seed: 102 },
-  { id: "H3", baseLat: 9.5, baseLng: 31.0, seed: 103 },
-  { id: "H4", baseLat: 5.2, baseLng: 31.8, seed: 104 },
-  { id: "H5", baseLat: 7.0, baseLng: 25.0, seed: 105 },
-  { id: "H6", baseLat: 10.2, baseLng: 29.5, seed: 106 },
-  { id: "H7", baseLat: 4.5, baseLng: 28.0, seed: 107 },
-  { id: "H8", baseLat: 8.8, baseLng: 33.2, seed: 108 },
-  { id: "H9", baseLat: 6.0, baseLng: 26.5, seed: 109 },
-  { id: "H10", baseLat: 9.0, baseLng: 27.0, seed: 110 },
-  { id: "H11", baseLat: 5.8, baseLng: 34.0, seed: 111 },
-  { id: "H12", baseLat: 7.5, baseLng: 32.5, seed: 112 },
+  { id: "H1", baseLat: 6.25, baseLng: 31.55, seed: 101 },  // Bor town — Dinka Bor herds
+  { id: "H2", baseLat: 6.55, baseLng: 31.80, seed: 102 },  // Twic East — Dinka Twic herds
+  { id: "H3", baseLat: 7.10, baseLng: 31.35, seed: 103 },  // Duk County — Dinka Duk herds
+  { id: "H4", baseLat: 5.90, baseLng: 31.50, seed: 104 },  // South of Bor — herds moving north
+  { id: "H5", baseLat: 7.40, baseLng: 30.70, seed: 105 },  // Sudd edge west — toic grazing
+  { id: "H6", baseLat: 7.65, baseLng: 31.40, seed: 106 },  // Ayod area — Lou Nuer herds
+  { id: "H7", baseLat: 7.80, baseLng: 32.20, seed: 107 },  // Uror County — Nuer herds
+  { id: "H8", baseLat: 6.70, baseLng: 32.80, seed: 108 },  // Pibor approach — Murle-Dinka border
+  { id: "H9", baseLat: 6.40, baseLng: 30.40, seed: 109 },  // Sudd lake margins — western fringe
+  { id: "H10", baseLat: 6.10, baseLng: 32.60, seed: 110 }, // Pochalla corridor — eastern
+  { id: "H11", baseLat: 6.80, baseLng: 31.50, seed: 111 }, // Kongor — central Jonglei
+  { id: "H12", baseLat: 7.90, baseLng: 31.80, seed: 112 }, // Waat area — northern herds
 ];
 
 /**
@@ -48,13 +53,14 @@ function herdPositionAtWeek(
   scenario: Partial<ScenarioParams>
 ): { lat: number; lng: number } {
   const t = weekIndex / 52;
-  const seasonalLat = 0.4 * Math.sin(t * Math.PI * 2) * (1 + (scenario.seasonalShift ?? 0) * 0.1);
-  const seasonalLng = 0.5 * Math.cos(t * Math.PI * 2 + 0.5) * (1 + (scenario.seasonalShift ?? 0) * 0.1);
-  const drought = (scenario.droughtSeverity ?? 0) * 0.3;
-  const flood = (scenario.floodExtent ?? 0) * 0.2;
-  const rain = (scenario.rainfallAnomaly ?? 0) * 0.15;
-  const driftLat = (seededRandom(seed + weekIndex * 7) - 0.5) * 0.2;
-  const driftLng = (seededRandom(seed + weekIndex * 11) - 0.5) * 0.2;
+  // Smaller amplitude for corridor-scale movement (~20-30 km seasonal shifts)
+  const seasonalLat = 0.2 * Math.sin(t * Math.PI * 2) * (1 + (scenario.seasonalShift ?? 0) * 0.1);
+  const seasonalLng = 0.25 * Math.cos(t * Math.PI * 2 + 0.5) * (1 + (scenario.seasonalShift ?? 0) * 0.1);
+  const drought = (scenario.droughtSeverity ?? 0) * 0.15;
+  const flood = (scenario.floodExtent ?? 0) * 0.1;
+  const rain = (scenario.rainfallAnomaly ?? 0) * 0.08;
+  const driftLat = (seededRandom(seed + weekIndex * 7) - 0.5) * 0.1;
+  const driftLng = (seededRandom(seed + weekIndex * 11) - 0.5) * 0.1;
   return {
     lat: baseLat + seasonalLat + drought - flood + rain + driftLat,
     lng: baseLng + seasonalLng - drought * 0.5 + flood * 0.3 + driftLng,

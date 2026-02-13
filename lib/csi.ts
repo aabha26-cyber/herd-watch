@@ -106,7 +106,7 @@ export function indexFloodExtent(pct: number): number {
   return 0.1;
 }
 
-/** Geospatial: water <5km → 1.0, 5–20 → 0.6, >20 → 0.2; elevation >50m → 0.8 else 0.4; conflict 0 → 1, 1–5 → 0.5, >5 → 0.1. Combined as average of three sub-indices. */
+/** Geospatial: water <5km → 1.0, 5–20 → 0.6, >20 → 0.2; elevation >50m → 0.8 else 0.4; conflict 0 → 1, 1–5 → 0.5, >5 → 0.1. Combined with conflict weighted highest (conflicts override). */
 export function indexGeospatial(
   distToWaterKm: number,
   elevationAboveLocalM: number,
@@ -116,7 +116,7 @@ export function indexGeospatial(
   const elevIdx = elevationAboveLocalM >= 50 ? 0.8 : 0.4;
   const conflictIdx =
     conflictIncidentsPerMonth === 0 ? 1.0 : conflictIncidentsPerMonth <= 5 ? 0.5 : 0.1;
-  return (waterIdx * 0.4 + elevIdx * 0.3 + conflictIdx * 0.3);
+  return waterIdx * 0.35 + elevIdx * 0.25 + conflictIdx * 0.4;
 }
 
 // ── Compute all indices from raw factor values ────────────────────────

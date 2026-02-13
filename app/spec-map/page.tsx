@@ -159,7 +159,7 @@ export default function SpecMapPage() {
               Herd movement model — your spec only
             </h1>
             <p className="text-xs text-gray-400">
-              South Sudan. Add points (lat/lng + factor values or presets from your range table).
+              Jonglei–Bor–Sudd Corridor. Add points (lat/lng + factor values or presets from your range table).
               CSI and movement likelihood from your formulas only; no synthetic data.
             </p>
           </div>

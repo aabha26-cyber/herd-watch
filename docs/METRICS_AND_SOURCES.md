@@ -1,21 +1,21 @@
-# Cattle Movement Prediction Model — Metrics, Indices & Data Sources
+# Consolidated Metrics, Indices, and Frameworks for Cattle Movement Prediction Model
 
-This document is the **single source of truth** for the HerdWatch cattle movement model. It defines factor rankings (1–10), numerical ranges, normalized indices (0–1), influence on movement, likelihood percentages, the Composite Suitability Index (CSI) formula, and data source URLs for reference. **The simulator uses mock data only (no APIs).** All mock values conform to the ranges and formulas below; real data can be plugged in later via the same interfaces.
+This document is the **single source of truth** for the HerdWatch cattle movement model. It defines factor rankings (1–10), numerical ranges, normalized indices (0–1), influence on movement, likelihood percentages, the Composite Suitability Index (CSI) formula, and path prediction. **The simulator uses mock data conforming to these ranges; real CHIRPS/MODIS/Sentinel/ACLED data can be plugged in via the same interfaces.** Cattle herd locations will be supplied separately.
 
 ---
 
-## 1. Factor Influence Rankings (Scale 1–10, 10 = Most Influential)
+## 1. Factor Influence Rankings (Scale: 1–10, 10 = Most Influential)
 
 | Rank | Factor | Rationale |
 |------|--------|-----------|
-| **10** | Vegetation Health / Forage Availability / NDVI | Primary driver; cattle move to areas with better forage. NDVI correlates with biomass and herd mobility resilience. |
-| **9** | Geospatial Layers (water proximity, elevation, conflict zones) | Sub-factors: water=9, elevation=8, conflicts=10. Conflicts override environmental factors; water/elevation guide seasonal paths. |
-| **9** | Rainfall | Drives flooding (wet season → high ground) and drought (dry season → water). Erratic patterns exacerbate resource scarcity. |
-| **9** | Water Bodies / Surface Water Extent | Essential for drinking; herds migrate to reliable sources in dry periods. |
-| **8** | Flood Extent / Inundation Mapping | Herds avoid flooded lowlands; floods trigger mass movement to higher ground. |
-| **8** | Soil Moisture Index | Influences vegetation growth and water retention; low moisture prompts movement to moister areas. |
-| **7** | Evapotranspiration | High rates increase water stress; indirectly pushes herds to cooler/wetter zones. |
-| **6** | Land Surface Temperature | Cattle stress >30°C; herds seek cooler elevations but less dominant than water/forage. |
+| **10** | Vegetation Health / Forage Availability / NDVI | Primary driver; correlates with biomass and herd mobility. |
+| **9** | Geospatial Layers (water proximity, elevation, conflict zones) | Sub-factors: water=9, elevation=8, conflicts=10; conflicts override environmental factors. |
+| **9** | Rainfall | Drives flooding/drought migrations. |
+| **9** | Water Bodies / Surface Water Extent | Essential for drinking; key in dry seasons. |
+| **8** | Flood Extent / Inundation Mapping | Triggers avoidance of lowlands. |
+| **8** | Soil Moisture Index | Affects vegetation and water retention. |
+| **7** | Evapotranspiration | Increases water stress indirectly. |
+| **6** | Land Surface Temperature | Causes stress but secondary to water/forage. |
 
 **Weights for CSI:** `Weight_i = Rank_i / 10` (e.g. NDVI=1.0, Geospatial=0.9, Rainfall=0.9, Water=0.9, Flood=0.8, Soil Moisture=0.8, ET=0.7, LST=0.6).
 
@@ -23,9 +23,9 @@ This document is the **single source of truth** for the HerdWatch cattle movemen
 
 ## 2. Detailed Metrics and Indices (Per Factor)
 
-All indices are **normalized 0–1**: 1 = highly favorable (no movement needed), 0 = unfavorable (movement likely).
+For each factor: numerical ranges (low/moderate/high), **normalized index (0–1)**, influence on movement direction, and **likelihood percentages**. Input raster/pixel data from satellites (CHIRPS, MODIS, Sentinel, SMAP, WaPOR, ACLED, HydroSHEDS, SRTM/Copernicus DEM); compute per-area scores and predict paths.
 
-### 2.1 Rainfall (CHIRPS; mm/day or seasonal mm)
+### 2.1 Rainfall (Source: CHIRPS; Units: mm/day or seasonal cumulative mm)
 
 | Range | Index | Interpretation |
 |-------|-------|----------------|
@@ -33,10 +33,10 @@ All indices are **normalized 0–1**: 1 = highly favorable (no movement needed),
 | Moderate: 5–20 mm/day or 200–500 mm/season | 0.8 | Balanced; minimal movement. |
 | High: >20 mm/day or >500 mm/season | 0.3 | Flood risk; drives to high ground. |
 
-- **Influence:** Low → 80% toward nearest water (<20 km). High → 70% toward elevation >50 m.
-- **Likelihood:** 75–90% for extremes; 50% for moderate.
+- **Influence:** Low → 80% toward nearest water (<20 km from HydroSHEDS). High → 70% toward elevations >50 m (Copernicus DEM).
+- **Likelihood:** 75–90% for extremes (e.g. <5 mm/day: 85% southward in dry season); 50% for moderate.
 
-### 2.2 Vegetation Health / NDVI (MODIS/Sentinel-2; 0–1 scale)
+### 2.2 Vegetation Health / NDVI (Source: MODIS/Sentinel-2; 0–1 scale; Biomass proxy: t/ha, <0.5 t/ha poor)
 
 | Range | Index | Interpretation |
 |-------|-------|----------------|
@@ -45,31 +45,31 @@ All indices are **normalized 0–1**: 1 = highly favorable (no movement needed),
 | High: >0.5 | 1.0 | Good (>1 t/ha); herds stay. |
 
 - **Influence:** Low → 90% toward higher NDVI (>0.4 within 50–100 km). Prioritize in dry season.
-- **Likelihood:** 85–95% for low; 30% for high.
+- **Likelihood:** 85–95% for low (e.g. <0.2: 90% migration); 30% for high.
 
-### 2.3 Soil Moisture Index (SMAP/Sentinel-1; % or m³/m³; critical 0.12–0.26)
+### 2.3 Soil Moisture Index (Source: SMAP/Sentinel-1; % or m³/m³; Critical: 0.12–0.26)
 
 | Range | Index | Interpretation |
 |-------|-------|----------------|
-| Low: <20% or <0.12 m³/m³ | 0.2 | Dry; stresses vegetation, water-seeking. |
-| Moderate: 20–40% or 0.12–0.26 m³/m³ | 0.7 | Optimal for forage. |
+| Low: <20% or <0.12 m³/m³ | 0.2 | Dry; stresses vegetation. |
+| Moderate: 20–40% or 0.12–0.26 m³/m³ | 0.7 | Optimal. |
 | High: >40% or >0.26 m³/m³ | 0.4 | Saturated; mud/flood risks. |
 
-- **Influence:** Low → 75% to moister (>30%) or water. High → 60% to drier, elevated areas.
-- **Likelihood:** 70–85% for low; 40% for moderate.
+- **Influence:** Low → 75% to moister areas (>30%) or water. High → 60% to drier elevations.
+- **Likelihood:** 70–85% for low (e.g. <20%: 80% for 20–50 km moves); 40% for moderate.
 
-### 2.4 Water Bodies / Surface Water Extent (MODIS/Sentinel-2; % or km² within 10 km)
+### 2.4 Water Bodies / Surface Water Extent (Source: MODIS/Sentinel-2; % or km² within 10 km)
 
 | Range | Index | Interpretation |
 |-------|-------|----------------|
 | Low: <10% or <1 km² | 0.1 | Scarce; forces migration. |
-| Moderate: 10–30% or 1–5 km² | 0.8 | Sufficient; anchors herds. |
-| High: >30% or >5 km² | 0.9 | Abundant; attracts but disease/flood risk. |
+| Moderate: 10–30% or 1–5 km² | 0.8 | Sufficient. |
+| High: >30% or >5 km² | 0.9 | Abundant; attracts but disease risk. |
 
-- **Influence:** Low → 85% to nearest fresh water (<20 km ideal). Avoid saline >5%.
-- **Likelihood:** 80–95% for low; 20% if high and forage poor.
+- **Influence:** Low → 85% to nearest fresh water (<10 km ideal). Avoid saline >5%.
+- **Likelihood:** 80–95% for low (e.g. <10%: 90% directed migration); 20% if high and forage poor.
 
-### 2.5 Evapotranspiration (MODIS/WaPOR; mm/day)
+### 2.5 Evapotranspiration (Source: MODIS/WaPOR; mm/day)
 
 | Range | Index | Interpretation |
 |-------|-------|----------------|
@@ -78,20 +78,20 @@ All indices are **normalized 0–1**: 1 = highly favorable (no movement needed),
 | High: >5 mm/day | 0.3 | High stress; amplifies drought. |
 
 - **Influence:** High → 65% to cooler (lower LST) or water.
-- **Likelihood:** 60–75% for high; 30% for low.
+- **Likelihood:** 60–75% for high (e.g. >5 mm/day: 70% amplifying moves); 30% for low.
 
-### 2.6 Land Surface Temperature (MODIS; °C; stress >30°C)
+### 2.6 Land Surface Temperature (Source: MODIS; °C; Stress threshold: >30°C)
 
 | Range | Index | Interpretation |
 |-------|-------|----------------|
 | Low: <25°C | 1.0 | Comfortable. |
 | Moderate: 25–30°C | 0.7 | Mild stress. |
-| High: >30°C | 0.4 | Severe; reduces intake, shade-seeking. |
+| High: >30°C | 0.4 | Severe; reduces intake. |
 
 - **Influence:** High → 55% to cooler elevations (>100 m) or shaded vegetation.
-- **Likelihood:** 50–70% for high; 20% for low.
+- **Likelihood:** 50–70% for high (e.g. >30°C: 65% short moves); 20% for low.
 
-### 2.7 Flood Extent / Inundation (MODIS/Sentinel-1; % flooded; threshold >10% avoid)
+### 2.7 Flood Extent / Inundation (Source: MODIS/Sentinel-1; % flooded; Threshold: >10% avoid)
 
 | Range | Index | Interpretation |
 |-------|-------|----------------|
@@ -100,9 +100,9 @@ All indices are **normalized 0–1**: 1 = highly favorable (no movement needed),
 | High: >10% | 0.1 | Avoid; evacuation trigger. |
 
 - **Influence:** High → 80% to non-flooded high ground (>50 m).
-- **Likelihood:** 75–90% for high; 10% for low.
+- **Likelihood:** 75–90% for high (e.g. >10%: 85% immediate relocation); 10% for low.
 
-### 2.8 Geospatial Layers (distance km, elevation m, incidents/month)
+### 2.8 Geospatial Layers (Sources: HydroSHEDS/OSM water; SRTM/Copernicus DEM elevation; ACLED/UN OCHA conflicts)
 
 | Sub-factor | Ranges and Index |
 |------------|-------------------|
@@ -110,64 +110,45 @@ All indices are **normalized 0–1**: 1 = highly favorable (no movement needed),
 | **Elevation (flood avoidance)** | >50 m above local mean → 0.8; <50 m → 0.4 |
 | **Conflict zones** | 0 incidents/month → 1.0, 1–5 → 0.5, >5 → 0.1 |
 
-- **Influence:** Water 80% attraction (<10 km). Elevation 70% push in wet season (>50 m). Conflicts 95% avoidance.
-- **Likelihood:** 85–95% for conflicts (>5: 95% reroute); 60–80% for water/elevation extremes.
+- **Influence:** Water 80% attraction (<10 km). Elevation 70% push in wet season (>50 m). Conflicts 95% reroute/avoid (>5 incidents).
+- **Likelihood:** 85–95% for conflicts (e.g. >5: 95% reroute); 60–80% for water/elevation extremes.
 
 ---
 
-## 3. Composite Suitability Index (CSI) and Movement Rules
+## 3. Framework for Combining Factors and Predicting Movement
 
-### CSI Formula
+### Composite Suitability Index (CSI)
 
-```
-CSI = Σ (Index_i × Weight_i)
-Weight_i = Rank_i / 10
-CSI range: 0–1
-```
-
-### Movement Likelihood by CSI
-
-| CSI Band | Movement likelihood | Behavior |
-|----------|---------------------|----------|
-| **High: >0.7** | 20–40% | Stay put. |
-| **Moderate: 0.4–0.7** | 50–70% | Short moves <20 km. |
-| **Low: <0.4** | 80–95% | Long moves 50–400 km to better CSI. |
+- **Formula:** `CSI = Σ (Index_i × Weight_i)`, where `Weight_i = Rank_i / 10`. CSI range: 0–1.
+- **High CSI (>0.7):** Low movement likelihood (20–40%); stay put.
+- **Moderate CSI (0.4–0.7):** Medium likelihood (50–70%); short moves <20 km.
+- **Low CSI (<0.4):** High likelihood (80–95%); long moves 50–400 km to better CSI areas.
 
 ### Path Prediction
 
-- **Cost surface:** `cost = 1 / CSI + penalties` (penalties for conflict zones and flood >10%).
-- **Method:** Least-cost path over 2–7 days from current herd locations.
+- **Method:** Least-cost path on geospatial overlays: `cost = 1/CSI + penalties` for conflicts and flood >10%. Extrapolate from current herd locations over 2–7 days; weight recent data higher; simulate weather changes.
 - **Uncertainty:** Penalize indices 10–20% if data >5 days old; multi-factor alignment → confidence (e.g. 6+ factors align → >80% certainty).
 
 ### Likelihood Percentage (Bayesian-style)
 
-- Base probability from season (e.g. 60% wet-season flood moves).
-- Adjust by CSI: e.g. −20% if CSI >0.7, +30% if CSI <0.4.
-- Output example: *"80% likelihood of moving 50 km north to high ground due to high rainfall and flood factors."*
+- Base probability from season (e.g. 60% wet-season flood moves). Adjust by CSI (e.g. −20% if CSI >0.7, +30% if CSI <0.4).
+- **Output example:** *"80% likelihood of moving 50 km north to high ground due to high rainfall and flood factors."*
 
 ---
 
-## 4. Data Sources and Access Methods (Reference Only — No APIs Used)
+## 4. Data Sources (Reference — for real-data integration)
 
-The simulator uses **mock data only**; no live API calls. Below are the canonical sources and URLs for each factor, for documentation and future integration (e.g. Google Earth Engine or direct downloads).
-
-| # | Factor | Source | URL / Access | Notes |
-|---|--------|--------|--------------|--------|
-| 1 | Rainfall | CHIRPS | https://www.chc.ucsb.edu/data/chirps ; FTP https://data.chc.ucsb.edu/products/CHIRPS-2.0/ ; GEE `UCSB-CHG/CHIRPS/DAILY` ; ClimateSERV https://climateserv.servirglobal.net/ | Free, no key. 0.05°, 1981–present. |
-| 2 | NDVI | MODIS / Sentinel-2 | MODIS https://modis.gsfc.nasa.gov/data/dataprod/mod13.php ; LP DAAC https://lpdaac.usgs.gov/products/mod13a3v006/ ; Earthdata https://search.earthdata.nasa.gov/ ; Sentinel-2 https://dataspace.copernicus.eu/ ; GEE `MODIS/061/MOD13A1` | Earthdata login; Copernicus free registration. MODIS 16-day, 1 km; Sentinel-2 10 m, 5-day revisit. |
-| 3 | Soil Moisture | SMAP / Sentinel-1 | SMAP https://smap.jpl.nasa.gov/data/ ; NSIDC https://nsidc.org/data/smap/data ; Sentinel-1 https://dataspace.copernicus.eu/data-collections/sentinel-data/sentinel-1 ; GEE `NASA/SMAP/SPL3SMP/009` | Earthdata login. SMAP 3-day, 36 km/9 km; Sentinel-1 SAR for rainy season. |
-| 4 | Water extent | MODIS / Sentinel-2 | MOD44W; same as NDVI; GEE `MODIS/006/MOD44W` | — |
-| 5 | Evapotranspiration | MODIS / WaPOR | MOD16 https://modis.gsfc.nasa.gov/data/dataprod/mod16.php ; WaPOR https://wapor.apps.fao.org/home/WAPOR_2/1 ; FAO API https://data.apps.fao.org/gismgr/shared/docs/api-reference/ ; GEE `MODIS/006/MOD16A2`, `FAO/WAPOR/2/L1_AETI_D` | WaPOR Africa, 10-day, 100 m; free. |
-| 6 | Land Surface Temperature | MODIS | MOD11 https://modis.gsfc.nasa.gov/data/dataprod/mod11.php ; Earthdata; GEE `MODIS/061/MOD11A1` | Daily, 1 km. |
-| 7 | Flood extent | MODIS / Sentinel-1 | NASA LANCE NRT https://lance.modaps.eosdis.nasa.gov/ ; GEE flood collections | Earthdata login. |
-| 8 | Geospatial | Water: HydroSHEDS / OSM. Elevation: SRTM / Copernicus DEM. Conflicts: ACLED / UN OCHA | HydroSHEDS https://www.hydrosheds.org/products/hydrorivers ; Overpass API https://overpass-turbo.eu/ ; SRTM Earthdata; Copernicus DEM https://dataspace.copernicus.eu/ ; ACLED https://acleddata.com/data-export-tool/ and API https://acleddata.com/api/acled/read ; HDX https://data.humdata.org/api | Overpass for OSM water (no key); ACLED/HDX free, some registration. GEE: `USGS/SRTMGL1_003`, `COPERNICUS/DEM/GLO30`. |
-| 9 | High-res (optional) | PlanetScope | https://www.planet.com/products/planet-imagery/ ; Planet Data API https://developers.planet.com/docs/apis/data/ ; sign-up https://www.planet.com/account/#/sign-up | Commercial; API key; daily 3–5 m. |
-
-### Integration Notes
-
-- **Simulator (current):** Mock data only; no API keys or network calls. All factor values are generated to match the ranges and indices in §2.
-- **Real app (future):** Google Earth Engine unifies CHIRPS, MODIS, Sentinel, SMAP, WaPOR, DEM. Alternatively: Earthdata/Copernicus for direct downloads; handle latency (e.g. Sentinel 5–12 day revisit), raster formats, and auth.
+| Factor | Source | Notes |
+|--------|--------|------|
+| Rainfall | CHIRPS | 0.05°, 1981–present; GEE `UCSB-CHG/CHIRPS/DAILY` |
+| NDVI | MODIS / Sentinel-2 | MOD13A1 16-day 1 km; Sentinel-2 10 m 5-day |
+| Soil Moisture | SMAP / Sentinel-1 | SMAP 3-day 36/9 km; GEE `NASA/SMAP/SPL3SMP/009` |
+| Water extent | MODIS / Sentinel-2 | MOD44W; JRC Global Surface Water |
+| Evapotranspiration | MODIS / WaPOR | MOD16A2; WaPOR Africa 10-day 100 m |
+| Land Surface Temperature | MODIS | MOD11A1 daily 1 km |
+| Flood extent | MODIS / Sentinel-1 | NASA LANCE NRT; GEE flood collections |
+| Geospatial | HydroSHEDS, SRTM/Copernicus DEM, ACLED, HDX | Water, elevation, conflict incidents |
 
 ---
 
-*Document version: 1.0 — HerdWatch cattle movement model specification. Implemented in `lib/csi.ts` and `lib/movement.ts`.*
+*Document version: 2.0 — Consolidated framework. Implemented in `lib/csi.ts`, `lib/mockFactors.ts`, and `lib/movement.ts`. Weather values are South Sudan–realistic (Jonglei–Bor–Sudd corridor); cattle DB to be supplied.*

@@ -1,18 +1,18 @@
 /**
- * Environment Layer Engine
- * ========================
- * Static + dynamic environmental layers for South Sudan.
- * Provides vegetation quality, water proximity, rainfall/weather,
- * and known conflict-prone areas.
+ * Environment Layer Engine — Jonglei–Bor–Sudd Corridor
+ * =====================================================
+ * Static + dynamic environmental layers for the Jonglei–Bor–Sudd
+ * cattle migration corridor (~5.5°N–8.2°N, 30.0°E–33.5°E).
  *
  * In production these come from real satellite datasets:
  *   - Vegetation: MODIS NDVI / Sentinel-2 derived NDVI
  *   - Water: JRC Global Surface Water / HydroSHEDS
  *   - Rainfall: CHIRPS 2.0
  *   - Conflict zones: ACLED event data
+ *   - Cattle camps: ONS Sentinel-2 predictions
  *
  * For the simulator we generate plausible synthetic layers
- * seeded from known geography.
+ * seeded from known geography of the corridor.
  */
 
 import { SOUTH_SUDAN_BOUNDS } from "./constants";
@@ -64,67 +64,66 @@ export type ConflictZone = {
   severity: "low" | "medium" | "high";
 };
 
-// ── Static data: water bodies (from HDX South Sudan Rivers + known lakes) ──
+// ── Static data: water bodies in Jonglei–Bor–Sudd corridor ──
+// Sources: HDX South Sudan Rivers, HydroSHEDS, JRC Surface Water
 
 export const WATER_BODIES: WaterBody[] = [
-  // White Nile corridor
-  { id: "w1", name: "White Nile (Juba)", lat: 4.85, lng: 31.60, type: "river" },
-  { id: "w2", name: "White Nile (Bor)", lat: 6.21, lng: 31.56, type: "river" },
-  { id: "w3", name: "White Nile (Malakal)", lat: 9.53, lng: 31.65, type: "river" },
-  { id: "w4", name: "White Nile (Renk)", lat: 11.75, lng: 32.78, type: "river" },
-  // Sudd wetland
-  { id: "w5", name: "Sudd Wetland (Central)", lat: 7.50, lng: 30.50, type: "wetland" },
-  { id: "w6", name: "Sudd Wetland (East)", lat: 7.80, lng: 31.20, type: "wetland" },
-  { id: "w7", name: "Sudd Wetland (South)", lat: 6.90, lng: 30.80, type: "wetland" },
-  // Bahr el Ghazal basin
-  { id: "w8", name: "Bahr el Ghazal", lat: 8.50, lng: 28.50, type: "river" },
-  { id: "w9", name: "Lol River", lat: 9.10, lng: 27.00, type: "river" },
-  { id: "w10", name: "Jur River (Wau)", lat: 7.70, lng: 28.00, type: "river" },
-  // Sobat / Eastern
-  { id: "w11", name: "Sobat River", lat: 8.80, lng: 33.00, type: "river" },
-  { id: "w12", name: "Pibor River", lat: 6.80, lng: 33.10, type: "river" },
-  // Seasonal water points
-  { id: "w13", name: "Tonj seasonal", lat: 7.27, lng: 28.68, type: "seasonal" },
-  { id: "w14", name: "Akobo seasonal", lat: 7.78, lng: 33.00, type: "seasonal" },
-  { id: "w15", name: "Lake No", lat: 9.50, lng: 30.50, type: "lake" },
+  // White Nile / Bahr el Jebel through the corridor
+  { id: "w1", name: "Bahr el Jebel (Bor)", lat: 6.21, lng: 31.56, type: "river" },
+  { id: "w2", name: "Bahr el Jebel (Kongor)", lat: 6.80, lng: 31.45, type: "river" },
+  { id: "w3", name: "Bahr el Jebel (Duk)", lat: 7.10, lng: 31.30, type: "river" },
+  // Sudd wetland — the massive seasonal swamp
+  { id: "w4", name: "Sudd Wetland (Central)", lat: 7.50, lng: 30.50, type: "wetland" },
+  { id: "w5", name: "Sudd Wetland (East)", lat: 7.30, lng: 31.00, type: "wetland" },
+  { id: "w6", name: "Sudd Wetland (South)", lat: 6.90, lng: 30.80, type: "wetland" },
+  { id: "w7", name: "Sudd Wetland (North)", lat: 7.80, lng: 30.60, type: "wetland" },
+  // Pibor River system (eastern edge)
+  { id: "w8", name: "Pibor River (South)", lat: 6.50, lng: 32.90, type: "river" },
+  { id: "w9", name: "Pibor River (Central)", lat: 6.80, lng: 33.10, type: "river" },
+  { id: "w10", name: "Pibor River (North)", lat: 7.30, lng: 32.90, type: "river" },
+  // Seasonal toic (floodplain) water points — critical for dry season grazing
+  { id: "w11", name: "Twic East toic", lat: 6.60, lng: 31.90, type: "seasonal" },
+  { id: "w12", name: "Duk toic", lat: 7.00, lng: 31.20, type: "seasonal" },
+  { id: "w13", name: "Ayod marsh", lat: 7.70, lng: 31.30, type: "seasonal" },
+  { id: "w14", name: "Lake Nyibor", lat: 7.20, lng: 31.60, type: "lake" },
+  { id: "w15", name: "Kangen seasonal pond", lat: 6.30, lng: 30.80, type: "seasonal" },
 ];
 
-// ── Static data: villages / settlements (from HDX OSM populated places) ──
+// ── Static data: villages / settlements in Jonglei–Bor–Sudd corridor ──
+// Sources: HDX OSM populated places, OCHA admin boundaries
 
 export const VILLAGES: Village[] = [
-  { id: "v1", name: "Juba", lat: 4.85, lng: 31.60, population: 525000 },
-  { id: "v2", name: "Malakal", lat: 9.53, lng: 31.66, population: 160000 },
-  { id: "v3", name: "Wau", lat: 7.70, lng: 27.99, population: 151000 },
-  { id: "v4", name: "Bor", lat: 6.21, lng: 31.56, population: 80000 },
-  { id: "v5", name: "Rumbek", lat: 6.81, lng: 29.68, population: 45000 },
-  { id: "v6", name: "Yambio", lat: 4.57, lng: 28.40, population: 40000 },
-  { id: "v7", name: "Torit", lat: 4.41, lng: 32.57, population: 28000 },
-  { id: "v8", name: "Aweil", lat: 8.77, lng: 27.40, population: 25000 },
-  { id: "v9", name: "Kapoeta", lat: 4.77, lng: 33.59, population: 20000 },
-  { id: "v10", name: "Bentiu", lat: 9.23, lng: 29.83, population: 18000 },
-  { id: "v11", name: "Pibor", lat: 6.80, lng: 33.13, population: 12000 },
-  { id: "v12", name: "Tonj", lat: 7.27, lng: 28.68, population: 15000 },
-  { id: "v13", name: "Gogrial", lat: 8.53, lng: 28.10, population: 10000 },
-  { id: "v14", name: "Akobo", lat: 7.78, lng: 33.00, population: 8000 },
-  { id: "v15", name: "Renk", lat: 11.75, lng: 32.78, population: 15000 },
-  { id: "v16", name: "Yei", lat: 4.09, lng: 30.68, population: 35000 },
-  { id: "v17", name: "Nimule", lat: 3.60, lng: 32.06, population: 20000 },
-  { id: "v18", name: "Nasir", lat: 8.62, lng: 33.07, population: 12000 },
-  { id: "v19", name: "Leer", lat: 8.30, lng: 30.10, population: 10000 },
-  { id: "v20", name: "Turalei", lat: 8.57, lng: 27.92, population: 9000 },
+  { id: "v1", name: "Bor", lat: 6.21, lng: 31.56, population: 80000 },
+  { id: "v2", name: "Kongor", lat: 6.80, lng: 31.50, population: 12000 },
+  { id: "v3", name: "Duk Padiet", lat: 7.05, lng: 31.30, population: 8000 },
+  { id: "v4", name: "Ayod", lat: 7.65, lng: 31.40, population: 10000 },
+  { id: "v5", name: "Waat", lat: 7.90, lng: 31.80, population: 7000 },
+  { id: "v6", name: "Pibor", lat: 6.80, lng: 33.13, population: 12000 },
+  { id: "v7", name: "Akobo", lat: 7.78, lng: 33.00, population: 8000 },
+  { id: "v8", name: "Twic East (Panyagor)", lat: 6.55, lng: 31.80, population: 6000 },
+  { id: "v9", name: "Duk Faiwil", lat: 6.90, lng: 31.25, population: 4000 },
+  { id: "v10", name: "Pochalla", lat: 6.10, lng: 32.65, population: 5000 },
+  { id: "v11", name: "Lankien", lat: 7.55, lng: 32.10, population: 5000 },
+  { id: "v12", name: "Yuai", lat: 7.40, lng: 32.40, population: 4000 },
+  { id: "v13", name: "Motot", lat: 6.35, lng: 31.70, population: 3000 },
+  { id: "v14", name: "Pakuau", lat: 6.60, lng: 31.60, population: 3500 },
+  { id: "v15", name: "Maar", lat: 7.20, lng: 31.50, population: 2500 },
+  { id: "v16", name: "Kolnyang", lat: 6.10, lng: 31.50, population: 5000 },
+  { id: "v17", name: "Pariak", lat: 6.40, lng: 31.40, population: 3000 },
+  { id: "v18", name: "Wernyol", lat: 6.70, lng: 31.20, population: 2500 },
+  { id: "v19", name: "Padak", lat: 6.50, lng: 31.55, population: 4000 },
+  { id: "v20", name: "Baidit", lat: 6.25, lng: 31.70, population: 3500 },
 ];
 
-// ── Static data: known conflict-prone areas (from ACLED patterns) ──
+// ── Static data: known conflict-prone areas in corridor (from ACLED patterns) ──
+// Focused on Dinka-Nuer and Dinka-Murle cattle raiding zones
 
 export const CONFLICT_ZONES: ConflictZone[] = [
-  { id: "cz1", name: "Greater Pibor (cattle raiding)", lat: 6.80, lng: 33.10, radiusKm: 50, severity: "high" },
-  { id: "cz2", name: "Jonglei-Bor corridor", lat: 6.50, lng: 31.70, radiusKm: 40, severity: "high" },
-  { id: "cz3", name: "Upper Nile (Malakal)", lat: 9.60, lng: 31.70, radiusKm: 35, severity: "high" },
-  { id: "cz4", name: "Unity State (Bentiu)", lat: 9.20, lng: 29.80, radiusKm: 30, severity: "medium" },
-  { id: "cz5", name: "Abyei border zone", lat: 9.60, lng: 28.40, radiusKm: 45, severity: "high" },
-  { id: "cz6", name: "Lakes State (Rumbek)", lat: 6.80, lng: 29.70, radiusKm: 25, severity: "medium" },
-  { id: "cz7", name: "Warrap (Tonj-Gogrial)", lat: 8.00, lng: 28.30, radiusKm: 30, severity: "medium" },
-  { id: "cz8", name: "Eastern Equatoria (Kapoeta)", lat: 4.80, lng: 33.50, radiusKm: 25, severity: "medium" },
+  { id: "cz1", name: "Greater Pibor (Murle cattle raiding)", lat: 6.80, lng: 33.10, radiusKm: 40, severity: "high" },
+  { id: "cz2", name: "Bor–Twic East corridor (interclan)", lat: 6.45, lng: 31.70, radiusKm: 25, severity: "high" },
+  { id: "cz3", name: "Duk–Ayod border (Dinka-Nuer)", lat: 7.30, lng: 31.40, radiusKm: 30, severity: "high" },
+  { id: "cz4", name: "Uror–Akobo (Lou Nuer-Murle)", lat: 7.80, lng: 32.80, radiusKm: 35, severity: "high" },
+  { id: "cz5", name: "Sudd fringe (land access tensions)", lat: 7.10, lng: 30.80, radiusKm: 20, severity: "medium" },
 ];
 
 // ── Utility ──────────────────────────────────────────────

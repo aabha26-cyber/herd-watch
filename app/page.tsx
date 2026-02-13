@@ -152,7 +152,7 @@ export default function Dashboard() {
     try {
       const dayLabel = dayOffset === 0 ? "Today" : `Day ${dayOffset} prediction`;
       await exportPDFSummary(
-        "HerdWatch Simulator – South Sudan",
+        "HerdWatch Simulator – Jonglei–Bor–Sudd Corridor",
         `${dayLabel}. Herds: ${herdsAtDay.length}. Alerts: ${alerts.length}. ` +
         `Scenario: rainfall ${scenario.rainfallAnomaly}, drought ${scenario.droughtSeverity}, flood ${scenario.floodExtent}. ` +
         `Environmental signals only; no GPS or individual tracking.`,
@@ -224,7 +224,7 @@ export default function Dashboard() {
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-semibold text-white">
             HerdWatch
-            <span className="ml-2 text-sm font-normal text-gray-400">· South Sudan Simulator</span>
+            <span className="ml-2 text-sm font-normal text-gray-400">· Jonglei–Bor–Sudd Corridor</span>
           </h1>
           <div className="flex items-center gap-3">
             <a

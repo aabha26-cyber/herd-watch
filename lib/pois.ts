@@ -18,16 +18,16 @@ export type Farm = {
   bounds: [number, number][];
 };
 
-// Demo peacekeeping / field presence sites (South Sudan)
+// UNMISS peacekeeping / field presence sites in Jonglei–Bor–Sudd corridor
 export const PEACEKEEPING_SITES: PeacekeepingSite[] = [
-  { id: "pk1", name: "Bor Field Office", lat: 6.21, lng: 31.56, type: "base" },
-  { id: "pk2", name: "Juba HQ", lat: 4.85, lng: 31.60, type: "base" },
-  { id: "pk3", name: "Malakal Outpost", lat: 9.53, lng: 31.65, type: "outpost" },
-  { id: "pk4", name: "Wau Patrol", lat: 7.70, lng: 27.99, type: "patrol" },
-  { id: "pk5", name: "Rumbek", lat: 6.81, lng: 29.68, type: "outpost" },
-  { id: "pk6", name: "Yambio", lat: 4.57, lng: 28.40, type: "patrol" },
-  { id: "pk7", name: "Torit", lat: 4.41, lng: 32.57, type: "outpost" },
-  { id: "pk8", name: "Kapoeta", lat: 4.77, lng: 33.59, type: "patrol" },
+  { id: "pk1", name: "UNMISS Bor PoC", lat: 6.22, lng: 31.58, type: "base" },
+  { id: "pk2", name: "Pibor Patrol Base", lat: 6.82, lng: 33.12, type: "patrol" },
+  { id: "pk3", name: "Ayod Forward Base", lat: 7.63, lng: 31.42, type: "outpost" },
+  { id: "pk4", name: "Akobo PoC", lat: 7.76, lng: 33.02, type: "base" },
+  { id: "pk5", name: "Duk Padiet Outpost", lat: 7.03, lng: 31.32, type: "outpost" },
+  { id: "pk6", name: "Pochalla Patrol", lat: 6.12, lng: 32.63, type: "patrol" },
+  { id: "pk7", name: "Waat Outpost", lat: 7.88, lng: 31.82, type: "outpost" },
+  { id: "pk8", name: "Kongor Patrol", lat: 6.78, lng: 31.52, type: "patrol" },
 ];
 
 // Demo farms (small polygons – rectangular plots)
@@ -42,13 +42,14 @@ function farmPolygon(centerLat: number, centerLng: number, sizeDeg = 0.08): [num
   ];
 }
 
+// Farms along the Bor–Kongor–Duk corridor (subsistence plots near settlements)
 export const FARMS: Farm[] = [
   { id: "f1", name: "Bor North", bounds: farmPolygon(6.35, 31.45) },
-  { id: "f2", name: "Juba West", bounds: farmPolygon(4.78, 31.52) },
-  { id: "f3", name: "Malakal South", bounds: farmPolygon(9.38, 31.62) },
-  { id: "f4", name: "Wau East", bounds: farmPolygon(7.72, 28.12) },
-  { id: "f5", name: "Rumbek Central", bounds: farmPolygon(6.75, 29.72) },
-  { id: "f6", name: "Yei", bounds: farmPolygon(4.09, 30.68) },
-  { id: "f7", name: "Torit North", bounds: farmPolygon(4.48, 32.52) },
-  { id: "f8", name: "Gogrial", bounds: farmPolygon(8.53, 28.10) },
+  { id: "f2", name: "Kongor East", bounds: farmPolygon(6.85, 31.60) },
+  { id: "f3", name: "Duk lowland", bounds: farmPolygon(7.10, 31.25) },
+  { id: "f4", name: "Twic East riverside", bounds: farmPolygon(6.55, 31.85) },
+  { id: "f5", name: "Kolnyang plot", bounds: farmPolygon(6.10, 31.48) },
+  { id: "f6", name: "Baidit plot", bounds: farmPolygon(6.25, 31.72) },
+  { id: "f7", name: "Wernyol plot", bounds: farmPolygon(6.72, 31.18) },
+  { id: "f8", name: "Padak plot", bounds: farmPolygon(6.48, 31.58) },
 ];

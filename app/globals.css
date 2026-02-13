@@ -16,3 +16,9 @@ body {
 
 /* Leaflet: satellite base shown as-is; container font */
 .leaflet-container { font-family: inherit; }
+
+/* Cattle herd markers: icon only, no default pin background */
+.leaflet-marker-icon.cattle-marker {
+  background: none !important;
+  border: none !important;
+}

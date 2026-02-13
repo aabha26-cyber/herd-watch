@@ -9,6 +9,7 @@ import {
   Rectangle,
   Circle,
   CircleMarker,
+  Marker,
   Polygon,
   Polyline,
   Tooltip,
@@ -78,7 +79,31 @@ function HeatmapLayer({
   );
 }
 
-// ── Herd Markers (Green dots) ────────────────────────────
+// ── Cattle icon (Google Maps–style: top-down, like car icons) ────────
+const CATTLE_ICON_SIZE = 40;
+// Top-down cattle silhouette: body oval + head circle — clean like GM vehicle icons
+const CATTLE_SVG = (size: number) => {
+  const fill = "#22c55e";
+  const stroke = "#15803d";
+  const sw = Math.max(1, size / 14);
+  return `<svg width="${size}" height="${size}" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+  <ellipse cx="16" cy="18" rx="10" ry="8" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>
+  <circle cx="16" cy="8" r="5" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>
+</svg>`;
+};
+
+function getCattleIcon(herdSize: number): L.DivIcon {
+  const scale = 0.85 + herdSize * 0.35;
+  const s = Math.round(CATTLE_ICON_SIZE * scale);
+  return L.divIcon({
+    className: "cattle-marker",
+    iconSize: [s, s],
+    iconAnchor: [s / 2, s / 2],
+    html: `<div style="width:${s}px;height:${s}px;display:flex;align-items:center;justify-content:center;pointer-events:auto;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5));">${CATTLE_SVG(s)}</div>`,
+  });
+}
+
+// ── Herd Markers (Cattle icons, like cars on Google Maps) ────────────
 
 function HerdsLayer({ herds, show }: { herds: SimHerd[]; show: boolean }) {
   if (!show || herds.length === 0) return null;
@@ -86,17 +111,11 @@ function HerdsLayer({ herds, show }: { herds: SimHerd[]; show: boolean }) {
   return (
     <>
       {herds.map((herd) => (
-        <CircleMarker
+        <Marker
           key={herd.id}
-          center={[herd.lat, herd.lng]}
-          radius={8 + herd.size * 6}
-          pathOptions={{
-            fillColor: "#22c55e",
-            color: "#15803d",
-            weight: 2,
-            fillOpacity: 0.9,
-            opacity: 1,
-          }}
+          position={[herd.lat, herd.lng]}
+          icon={getCattleIcon(herd.size)}
+          zIndexOffset={500}
         >
           <Tooltip permanent={false} direction="top">
             <div>
@@ -115,7 +134,7 @@ function HerdsLayer({ herds, show }: { herds: SimHerd[]; show: boolean }) {
               </span>
             </div>
           </Tooltip>
-        </CircleMarker>
+        </Marker>
       ))}
     </>
   );

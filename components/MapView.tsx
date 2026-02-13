@@ -1,5 +1,20 @@
 "use client";
 
+// #region agent log
+if (typeof globalThis !== "undefined") {
+  fetch("http://127.0.0.1:7245/ingest/dacdc356-df59-402d-bb7c-df96680bea95", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      location: "MapView.tsx:module",
+      message: "MapView module evaluated",
+      data: { env: typeof window === "undefined" ? "server" : "client" },
+      timestamp: Date.now(),
+      hypothesisId: "H3",
+    }),
+  }).catch(() => {});
+}
+// #endregion
 import dynamic from "next/dynamic";
 import { SOUTH_SUDAN_BOUNDS } from "@/lib/constants";
 import type { MapInnerProps } from "./MapInner";
