@@ -30,13 +30,25 @@ import CSIModelPanel from "@/components/CSIModelPanel";
 import { simulateHerds, type SimHerd } from "@/lib/movement";
 import { detectRisks } from "@/lib/risk";
 import { generateEnvironmentGridWithCSI } from "@/lib/envGrid";
-import { WATER_BODIES, VILLAGES, CONFLICT_ZONES } from "@/lib/environment";
+import {
+  WATER_BODIES,
+  VILLAGES,
+  CONFLICT_ZONES,
+  setVillagesData,
+  type Village,
+} from "@/lib/environment";
 import { PEACEKEEPING_SITES, FARMS } from "@/lib/pois";
 import type { ScenarioParams } from "@/lib/heatScore";
 import type { UploadedLayer } from "@/lib/dataUpload";
 import { exportMapPNG, exportPDFSummary, exportFieldBriefing } from "@/lib/export";
+import {
+  setEnvironmentGrid,
+  setConflictGrid,
+  getDataMode,
+} from "@/lib/data/realFactors";
+import type { EnvironmentGrid, ConflictGrid } from "@/lib/data/types";
 
-const FORECAST_DAYS = 4;
+const FORECAST_DAYS = 7;
 
 const DEFAULT_SCENARIO: ScenarioParams = {
   rainfallAnomaly: 0,
@@ -67,6 +79,74 @@ export default function Dashboard() {
   const [scenario, setScenario] = useState<ScenarioParams>(DEFAULT_SCENARIO);
   const [uploadedLayers, setUploadedLayers] = useState<UploadedLayer[]>([]);
   const [exporting, setExporting] = useState(false);
+  const [dataMode, setDataMode] = useState<"real" | "mock" | "mixed" | "loading">("loading");
+  const [villages, setVillages] = useState<Village[]>(VILLAGES);
+
+  // ── Load real satellite data on mount ──────────────────
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadRealData() {
+      // Fetch environment, conflicts, and villages in parallel.
+      const [envRes, conflictRes, villageRes] = await Promise.allSettled([
+        fetch("/api/environment").then((r) => (r.ok ? r.json() : null)),
+        fetch("/api/conflicts").then((r) => (r.ok ? r.json() : null)),
+        fetch("/api/villages").then((r) => (r.ok ? r.json() : null)),
+      ]);
+
+      if (cancelled) return;
+
+      // Load environment grid if available
+      const envData =
+        envRes.status === "fulfilled" && envRes.value && !envRes.value.error
+          ? (envRes.value as EnvironmentGrid)
+          : null;
+      if (envData) {
+        setEnvironmentGrid(envData);
+        console.log(
+          `[HerdWatch] Loaded real satellite data: ${envData.cells.length} grid cells from ${Object.keys(envData.metadata.sources).length} sources`
+        );
+      }
+
+      // Load conflict grid if available
+      const conflictData =
+        conflictRes.status === "fulfilled" &&
+        conflictRes.value &&
+        !conflictRes.value.error
+          ? (conflictRes.value as ConflictGrid)
+          : null;
+      if (conflictData) {
+        setConflictGrid(conflictData);
+        console.log(
+          `[HerdWatch] Loaded real conflict data: ${conflictData.events.length} events`
+        );
+      }
+
+      // Load villages from HDX/OSM local GeoJSON when available.
+      const villagesPayload =
+        villageRes.status === "fulfilled" && villageRes.value && !villageRes.value.error
+          ? (villageRes.value as { villages: Village[]; metadata?: { source?: string } })
+          : null;
+      if (villagesPayload?.villages?.length) {
+        setVillagesData(villagesPayload.villages);
+        setVillages(villagesPayload.villages);
+        console.log(
+          `[HerdWatch] Loaded villages: ${villagesPayload.villages.length} points (${villagesPayload.metadata?.source ?? "unknown source"})`
+        );
+      }
+
+      setDataMode(getDataMode());
+    }
+
+    loadRealData().catch((err) => {
+      console.warn("[HerdWatch] Real data load failed, using mock data:", err);
+      if (!cancelled) setDataMode("mock");
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Layer toggles
   const [showHerds, setShowHerds] = useState(true);
@@ -85,9 +165,11 @@ export default function Dashboard() {
   const baseDay = 180; // mid-year (dry→wet transition)
 
   // ── Simulation ────────────────────────────────────────
+  // dataMode included as dependency so herds recompute once real satellite data loads
   const allHerds = useMemo(
     () => simulateHerds(baseDay, FORECAST_DAYS, scenario),
-    [scenario]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [scenario, dataMode]
   );
 
   // Herds at the selected day offset
@@ -100,7 +182,7 @@ export default function Dashboard() {
             ...h,
             lat: pred.lat,
             lng: pred.lng,
-            confidence: h.confidence * (1 - dayOffset * 0.08),
+            confidence: h.confidence * Math.max(0.2, 1 - dayOffset * 0.07),
           }
         : h;
     });
@@ -109,23 +191,30 @@ export default function Dashboard() {
   // Risks (always computed from base herds with full predictions)
   const { alerts, riskZones, alternativeRoutes, suggestedActions } = useMemo(
     () => detectRisks(allHerds, baseDay, scenario),
-    [allHerds, scenario]
+    // allHerds already depends on dataMode transitively, but listing for clarity
+    [allHerds, scenario, villages]
   );
 
   // Environment heatmap (CSI-based: green = high suitability, red = low)
+  // dataMode included as dependency so heatmap recomputes once real satellite data loads
   const envCells = useMemo(
     () => generateEnvironmentGridWithCSI({ ...scenario, day: baseDay + dayOffset }, 0.3),
-    [scenario, dayOffset]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [scenario, dayOffset, dataMode]
   );
 
-  // ── Playback ──────────────────────────────────────────
-  useEffect(() => {
-    if (!isPlaying) return;
-    const id = setInterval(() => {
-      setDayOffset((d) => (d >= FORECAST_DAYS ? 0 : d + 1));
-    }, 1200);
-    return () => clearInterval(id);
-  }, [isPlaying]);
+  // ── Day selection handler (supports -1 sentinel from autoplay) ──
+  const handleDaySelect = useCallback(
+    (day: number) => {
+      if (day === -1) {
+        // Autoplay advance: cycle through days
+        setDayOffset((d) => (d >= FORECAST_DAYS ? 0 : d + 1));
+      } else {
+        setDayOffset(day);
+      }
+    },
+    []
+  );
 
   // ── Upload handlers ───────────────────────────────────
   const handleLayerAdd = useCallback((layer: UploadedLayer) => {
@@ -211,7 +300,7 @@ export default function Dashboard() {
         showHeatmap={showHeatmap}
         waterBodies={WATER_BODIES}
         showWater={showWater}
-        villages={VILLAGES}
+        villages={villages}
         showVillages={showVillages}
         conflictZones={CONFLICT_ZONES}
         showConflictZones={showConflictZones}
@@ -238,8 +327,16 @@ export default function Dashboard() {
               {alerts.filter((a) => a.riskLevel === "high").length} critical ·{" "}
               {alerts.filter((a) => a.riskLevel === "medium").length} warnings
             </span>
-            <span className="hidden text-xs text-gray-500 sm:block">
-              Feasibility demo — not a live system
+            <span className="hidden text-xs sm:block">
+              {dataMode === "loading" ? (
+                <span className="text-amber-400">Loading data...</span>
+              ) : dataMode === "real" ? (
+                <span className="text-emerald-400">Live satellite data</span>
+              ) : dataMode === "mixed" ? (
+                <span className="text-amber-400">Partial real data</span>
+              ) : (
+                <span className="text-gray-500">Demo mode — mock data</span>
+              )}
             </span>
           </div>
         </div>
@@ -302,7 +399,7 @@ export default function Dashboard() {
           <TimeSlider
             dayOffset={dayOffset}
             maxDays={FORECAST_DAYS}
-            onSelect={setDayOffset}
+            onSelect={handleDaySelect}
             isPlaying={isPlaying}
             onPlayPause={() => setIsPlaying((p) => !p)}
           />

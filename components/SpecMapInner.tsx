@@ -42,11 +42,20 @@ export default function SpecMapInner({ center, zoom, points }: SpecMapInnerProps
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const bounds = useMemo(
+  const dataBounds = useMemo(
     () =>
       L.latLngBounds(
         [SOUTH_SUDAN_BOUNDS.bbox.south, SOUTH_SUDAN_BOUNDS.bbox.west],
         [SOUTH_SUDAN_BOUNDS.bbox.north, SOUTH_SUDAN_BOUNDS.bbox.east]
+      ),
+    []
+  );
+
+  const viewBounds = useMemo(
+    () =>
+      L.latLngBounds(
+        [SOUTH_SUDAN_BOUNDS.viewBbox.south, SOUTH_SUDAN_BOUNDS.viewBbox.west],
+        [SOUTH_SUDAN_BOUNDS.viewBbox.north, SOUTH_SUDAN_BOUNDS.viewBbox.east]
       ),
     []
   );
@@ -73,15 +82,15 @@ export default function SpecMapInner({ center, zoom, points }: SpecMapInnerProps
       className="h-full w-full bg-surface-900"
       style={{ height: "100%", minHeight: "60vh" }}
       zoomControl={true}
-      minZoom={5}
-      maxZoom={12}
-      maxBounds={bounds}
-      maxBoundsViscosity={1}
+      minZoom={6}
+      maxZoom={13}
+      maxBounds={viewBounds}
+      maxBoundsViscosity={0.8}
     >
       <MapResizeFix />
       <TileLayer url={SATELLITE_TILE} attribution={SATELLITE_ATTRIBUTION} />
       <Rectangle
-        bounds={bounds}
+        bounds={dataBounds}
         pathOptions={{ color: "rgba(255,255,255,0.2)", weight: 1, fill: false }}
       />
       {points.map((p) => (

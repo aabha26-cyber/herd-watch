@@ -27,7 +27,9 @@ export default function AlertsPanel({ alerts }: AlertsPanelProps) {
           <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
           Movement Alerts
         </h3>
-        <p className="text-xs text-green-400/80">All clear — no convergences detected in next 4 days.</p>
+        <p className="text-xs text-green-400/80">
+          All clear — no convergences detected in current forecast window.
+        </p>
       </div>
     );
   }
@@ -65,6 +67,12 @@ export default function AlertsPanel({ alerts }: AlertsPanelProps) {
 
             {/* Location */}
             <p className="mb-1 text-[10px] font-semibold text-gray-300">{alert.location}</p>
+            <p className="mb-1 text-[10px] text-gray-500">
+              {alert.riskCategory === "community_protection"
+                ? "Community protection risk"
+                : "Resource tension risk"}{" "}
+              · {alert.thresholdProfile.county} · {alert.thresholdProfile.season}
+            </p>
 
             {/* Reason */}
             <p className="font-medium leading-snug">{alert.reason}</p>

@@ -92,7 +92,7 @@ export const WATER_BODIES: WaterBody[] = [
 // ── Static data: villages / settlements in Jonglei–Bor–Sudd corridor ──
 // Sources: HDX OSM populated places, OCHA admin boundaries
 
-export const VILLAGES: Village[] = [
+const DEFAULT_VILLAGES: Village[] = [
   { id: "v1", name: "Bor", lat: 6.21, lng: 31.56, population: 80000 },
   { id: "v2", name: "Kongor", lat: 6.80, lng: 31.50, population: 12000 },
   { id: "v3", name: "Duk Padiet", lat: 7.05, lng: 31.30, population: 8000 },
@@ -114,6 +114,20 @@ export const VILLAGES: Village[] = [
   { id: "v19", name: "Padak", lat: 6.50, lng: 31.55, population: 4000 },
   { id: "v20", name: "Baidit", lat: 6.25, lng: 31.70, population: 3500 },
 ];
+
+/**
+ * Mutable village dataset. Starts with curated defaults and can be replaced
+ * by real HDX/OSM settlements loaded at runtime.
+ */
+export let VILLAGES: Village[] = DEFAULT_VILLAGES;
+
+export function setVillagesData(villages: Village[]): void {
+  VILLAGES = villages.length > 0 ? villages : DEFAULT_VILLAGES;
+}
+
+export function resetVillagesData(): void {
+  VILLAGES = DEFAULT_VILLAGES;
+}
 
 // ── Static data: known conflict-prone areas in corridor (from ACLED patterns) ──
 // Focused on Dinka-Nuer and Dinka-Murle cattle raiding zones
