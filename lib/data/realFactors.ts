@@ -128,6 +128,25 @@ function getConflictIncidents(lat: number, lng: number): number | null {
   return 0; // No conflict data = 0 incidents
 }
 
+/**
+ * Public accessor for ACLED-derived conflict intensity at location.
+ * Returns null when ACLED grid is not loaded.
+ */
+export function getConflictIncidentsAt(lat: number, lng: number): number | null {
+  if (!conflictLookup) return null;
+  return getConflictIncidents(lat, lng);
+}
+
+/**
+ * Normalized ACLED conflict risk score in [0,1], where 1 ~= 8+ incidents/month.
+ * Returns null when ACLED grid is not loaded.
+ */
+export function getConflictRiskScoreAt(lat: number, lng: number): number | null {
+  const incidents = getConflictIncidentsAt(lat, lng);
+  if (incidents === null) return null;
+  return clamp(incidents / 8, 0, 1);
+}
+
 // ── Main export ───────────────────────────────────────────
 
 /**

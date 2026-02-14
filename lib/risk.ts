@@ -21,6 +21,11 @@ import {
   conflictHistoryAt,
   type DayScenario,
 } from "./environment";
+import { getConflictRiskScoreAt } from "./data/realFactors";
+import {
+  getRiskThresholdProfile,
+  type RiskCategory,
+} from "./risk-config";
 import { FARMS } from "./pois";
 
 // ── Types ─────────────────────────────────────────────────
@@ -36,6 +41,8 @@ export type Alert = {
   daysAway: number;
   /** Risk level */
   riskLevel: RiskLevel;
+  /** UN-facing risk category */
+  riskCategory: RiskCategory;
   /** Why this alert was triggered */
   reason: string;
   /** Human-readable location */
@@ -47,7 +54,10 @@ export type Alert = {
     nearVillage: boolean;
     nearFarmland: boolean;
     historicalConflict: boolean;
+    acledBackedConflict: boolean;
   };
+  /** Context profile used for this risk decision */
+  thresholdProfile: { county: string; season: string };
   /** Uber-style rerouting suggestions */
   suggestedActions: SuggestedAction[];
 };
@@ -55,6 +65,7 @@ export type Alert = {
 export type SuggestedAction = {
   herdId: string;
   type: "redirect" | "delay" | "both";
+  riskCategory: RiskCategory;
   direction?: string;
   delayDays?: number;
   description: string;
@@ -82,13 +93,6 @@ export type AlternativeRoute = {
   label: string;
   type: "redirect" | "delay";
 };
-
-// ── Constants ───────────────────────────────────────────
-
-const CONVERGENCE_THRESHOLD_KM = 35;
-const VILLAGE_PROXIMITY_KM = 30;
-const FARM_PROXIMITY_KM = 20;
-const RESOURCE_SCARCITY_THRESHOLD = 0.35;
 
 // ── Utility ─────────────────────────────────────────────
 
@@ -185,24 +189,26 @@ export function detectRisks(
         const b = futurePositions[j];
         const dist = distanceKm(a.lat, a.lng, b.lat, b.lng);
 
-        if (dist >= CONVERGENCE_THRESHOLD_KM) continue;
-
-        // Convergence detected! Now check other conditions
+        // Convergence + contextual thresholds are county/season aware.
         const midLat = (a.lat + b.lat) / 2;
         const midLng = (a.lng + b.lng) / 2;
+        const profile = getRiskThresholdProfile(midLat, midLng, dayScenario);
+
+        if (dist >= profile.convergenceKm) continue;
 
         const veg = vegetationAt(midLat, midLng, dayScenario);
         const water = waterAt(midLat, midLng, dayScenario);
         const villageDist = nearestVillageDistance(midLat, midLng);
         const farmDist = distToFarm(midLat, midLng);
-        const conflictHist = conflictHistoryAt(midLat, midLng);
+        const acledConflict = getConflictRiskScoreAt(midLat, midLng);
+        const conflictHist = acledConflict ?? conflictHistoryAt(midLat, midLng);
 
         const resourceScarcity =
-          veg < RESOURCE_SCARCITY_THRESHOLD ||
-          water.score < RESOURCE_SCARCITY_THRESHOLD;
-        const nearVillage = villageDist.distKm < VILLAGE_PROXIMITY_KM;
-        const nearFarm = farmDist < FARM_PROXIMITY_KM;
-        const hasHistory = conflictHist > 0.3;
+          veg < profile.resourceScarcityThreshold ||
+          water.score < profile.resourceScarcityThreshold;
+        const nearVillage = villageDist.distKm < profile.villageProximityKm;
+        const nearFarm = farmDist < profile.farmProximityKm;
+        const hasHistory = conflictHist > profile.historyThreshold;
 
         // Count how many trigger conditions are met
         const triggerCount = [
@@ -217,10 +223,15 @@ export function detectRisks(
 
         // Calculate risk level (stricter thresholds)
         let riskLevel: RiskLevel = "low";
-        if (dist < CONVERGENCE_THRESHOLD_KM * 0.3 && triggerCount >= 3)
+        if (dist < profile.convergenceKm * 0.3 && triggerCount >= 3)
           riskLevel = "high";
-        else if (dist < CONVERGENCE_THRESHOLD_KM * 0.5 && triggerCount >= 2)
+        else if (dist < profile.convergenceKm * 0.5 && triggerCount >= 2)
           riskLevel = "medium";
+
+        const riskCategory: RiskCategory =
+          nearVillage || nearFarm || hasHistory
+            ? "community_protection"
+            : "resource_tension";
 
         // Build reason string
         const reasons: string[] = [
@@ -232,7 +243,12 @@ export function detectRisks(
             `near ${villageDist.village?.name ?? "settlement"} (${villageDist.distKm.toFixed(0)}km)`,
           );
         if (nearFarm) reasons.push("near farmland");
-        if (hasHistory) reasons.push("historically conflict-prone area");
+        if (hasHistory)
+          reasons.push(
+            acledConflict !== null
+              ? "recent ACLED conflict activity"
+              : "historically conflict-prone area"
+          );
 
         // Location name
         const locationName = villageDist.village
@@ -255,6 +271,7 @@ export function detectRisks(
         suggestedActions.push({
           herdId: a.id,
           type: "redirect",
+          riskCategory,
           direction: altA.direction,
           description: `Redirect ${a.id} ${altA.direction} toward open pasture`,
           impactEstimate: "Lower conflict probability by ~40%",
@@ -266,6 +283,7 @@ export function detectRisks(
         suggestedActions.push({
           herdId: b.id,
           type: "delay",
+          riskCategory,
           delayDays: Math.min(dayOffset, 2),
           description: `Delay ${b.id} movement by ${Math.min(dayOffset, 2)} day${Math.min(dayOffset, 2) > 1 ? "s" : ""} — water available south`,
           impactEstimate: "Lower conflict probability by ~30%",
@@ -278,6 +296,7 @@ export function detectRisks(
           lng: midLng,
           daysAway: dayOffset,
           riskLevel,
+          riskCategory,
           reason: reasons.join("; "),
           location: locationName,
           triggers: {
@@ -286,6 +305,11 @@ export function detectRisks(
             nearVillage,
             nearFarmland: nearFarm,
             historicalConflict: hasHistory,
+            acledBackedConflict: acledConflict !== null,
+          },
+          thresholdProfile: {
+            county: profile.county,
+            season: profile.season,
           },
           suggestedActions,
         });

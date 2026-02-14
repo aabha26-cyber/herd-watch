@@ -30,7 +30,13 @@ import CSIModelPanel from "@/components/CSIModelPanel";
 import { simulateHerds, type SimHerd } from "@/lib/movement";
 import { detectRisks } from "@/lib/risk";
 import { generateEnvironmentGridWithCSI } from "@/lib/envGrid";
-import { WATER_BODIES, VILLAGES, CONFLICT_ZONES } from "@/lib/environment";
+import {
+  WATER_BODIES,
+  VILLAGES,
+  CONFLICT_ZONES,
+  setVillagesData,
+  type Village,
+} from "@/lib/environment";
 import { PEACEKEEPING_SITES, FARMS } from "@/lib/pois";
 import type { ScenarioParams } from "@/lib/heatScore";
 import type { UploadedLayer } from "@/lib/dataUpload";
@@ -74,16 +80,18 @@ export default function Dashboard() {
   const [uploadedLayers, setUploadedLayers] = useState<UploadedLayer[]>([]);
   const [exporting, setExporting] = useState(false);
   const [dataMode, setDataMode] = useState<"real" | "mock" | "mixed" | "loading">("loading");
+  const [villages, setVillages] = useState<Village[]>(VILLAGES);
 
   // ── Load real satellite data on mount ──────────────────
   useEffect(() => {
     let cancelled = false;
 
     async function loadRealData() {
-      // Fetch environment data (GEE) and conflict data (ACLED) in parallel
-      const [envRes, conflictRes] = await Promise.allSettled([
+      // Fetch environment, conflicts, and villages in parallel.
+      const [envRes, conflictRes, villageRes] = await Promise.allSettled([
         fetch("/api/environment").then((r) => (r.ok ? r.json() : null)),
         fetch("/api/conflicts").then((r) => (r.ok ? r.json() : null)),
+        fetch("/api/villages").then((r) => (r.ok ? r.json() : null)),
       ]);
 
       if (cancelled) return;
@@ -111,6 +119,19 @@ export default function Dashboard() {
         setConflictGrid(conflictData);
         console.log(
           `[HerdWatch] Loaded real conflict data: ${conflictData.events.length} events`
+        );
+      }
+
+      // Load villages from HDX/OSM local GeoJSON when available.
+      const villagesPayload =
+        villageRes.status === "fulfilled" && villageRes.value && !villageRes.value.error
+          ? (villageRes.value as { villages: Village[]; metadata?: { source?: string } })
+          : null;
+      if (villagesPayload?.villages?.length) {
+        setVillagesData(villagesPayload.villages);
+        setVillages(villagesPayload.villages);
+        console.log(
+          `[HerdWatch] Loaded villages: ${villagesPayload.villages.length} points (${villagesPayload.metadata?.source ?? "unknown source"})`
         );
       }
 
@@ -171,7 +192,7 @@ export default function Dashboard() {
   const { alerts, riskZones, alternativeRoutes, suggestedActions } = useMemo(
     () => detectRisks(allHerds, baseDay, scenario),
     // allHerds already depends on dataMode transitively, but listing for clarity
-    [allHerds, scenario]
+    [allHerds, scenario, villages]
   );
 
   // Environment heatmap (CSI-based: green = high suitability, red = low)
@@ -279,7 +300,7 @@ export default function Dashboard() {
         showHeatmap={showHeatmap}
         waterBodies={WATER_BODIES}
         showWater={showWater}
-        villages={VILLAGES}
+        villages={villages}
         showVillages={showVillages}
         conflictZones={CONFLICT_ZONES}
         showConflictZones={showConflictZones}

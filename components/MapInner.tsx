@@ -173,7 +173,7 @@ function PredictedPathsLayer({
               >
                 <Tooltip permanent={false} direction="top">
                   <span className="text-xs text-gray-700">
-                    {herd.id} predicted path (4-day)
+                    {herd.id} predicted path ({herd.predicted.length}-day)
                   </span>
                 </Tooltip>
               </Polyline>

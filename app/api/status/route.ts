@@ -115,6 +115,13 @@ export async function GET() {
         refreshRate: "24h",
         available: acledConfigured,
       },
+      villages: {
+        dataset: "HDX/OSM populated places (local GeoJSON fallback supported)",
+        provider: "HDX / OSM",
+        resolution: "point features",
+        refreshRate: "manual refresh (download-hdx-data.sh)",
+        available: true,
+      },
     },
     instructions: {
       gee: geeConfigured
