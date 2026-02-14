@@ -636,11 +636,22 @@ export default function MapInner({
     // #endregion
   }, []);
 
-  const bounds = useMemo(
+  // Data-area rectangle (for the outline overlay)
+  const dataBounds = useMemo(
     () =>
       L.latLngBounds(
         [SOUTH_SUDAN_BOUNDS.bbox.south, SOUTH_SUDAN_BOUNDS.bbox.west],
         [SOUTH_SUDAN_BOUNDS.bbox.north, SOUTH_SUDAN_BOUNDS.bbox.east]
+      ),
+    []
+  );
+
+  // Wider pan/zoom bounds so edge herds are fully visible
+  const viewBounds = useMemo(
+    () =>
+      L.latLngBounds(
+        [SOUTH_SUDAN_BOUNDS.viewBbox.south, SOUTH_SUDAN_BOUNDS.viewBbox.west],
+        [SOUTH_SUDAN_BOUNDS.viewBbox.north, SOUTH_SUDAN_BOUNDS.viewBbox.east]
       ),
     []
   );
@@ -667,15 +678,15 @@ export default function MapInner({
       className="h-full w-full bg-surface-900"
       style={{ height: "100%", minHeight: "100vh" }}
       zoomControl={true}
-      minZoom={5}
-      maxZoom={12}
-      maxBounds={bounds}
-      maxBoundsViscosity={1}
+      minZoom={6}
+      maxZoom={13}
+      maxBounds={viewBounds}
+      maxBoundsViscosity={0.8}
     >
       <MapResizeFix />
       <TileLayer url={SATELLITE_TILE} attribution={SATELLITE_ATTRIBUTION} />
       <Rectangle
-        bounds={bounds}
+        bounds={dataBounds}
         pathOptions={{ color: "rgba(255,255,255,0.15)", weight: 1, fill: false }}
       />
 

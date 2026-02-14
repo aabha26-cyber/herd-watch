@@ -7,7 +7,7 @@
  * low CSI → long (50–400 km) toward better areas.
  */
 
-import { getFactorValuesAt } from "./mockFactors";
+import { getFactorValuesAt } from "./data/realFactors";
 import {
   computeFactorIndices,
   computeCSI,

@@ -2,3 +2,7 @@ node_modules
 .next
 .cursor
 *.log
+.env.local
+.env*.local
+secrets/
+.env

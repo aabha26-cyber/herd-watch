@@ -1,10 +1,10 @@
 /**
  * Environment grid with CSI for heatmap
- * Uses mock factors + CSI so the map shows Composite Suitability Index (spec).
+ * Uses real/fallback factors + CSI so the map shows Composite Suitability Index (spec).
  */
 
 import { SOUTH_SUDAN_BOUNDS } from "./constants";
-import { getFactorValuesAt } from "./mockFactors";
+import { getFactorValuesAt } from "./data/realFactors";
 import { computeFactorIndices, computeCSI } from "./csi";
 import type { EnvironmentCell, VegetationQuality } from "./environment";
 import type { DayScenario } from "./environment";
