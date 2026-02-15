@@ -40,7 +40,11 @@ import {
 import { PEACEKEEPING_SITES, FARMS } from "@/lib/pois";
 import type { ScenarioParams } from "@/lib/heatScore";
 import type { UploadedLayer } from "@/lib/dataUpload";
-import { exportMapPNG, exportPDFSummary, exportFieldBriefing } from "@/lib/export";
+import {
+  exportMapPNG,
+  exportPDFSummary,
+  exportFieldBriefing,
+} from "@/lib/export";
 import {
   setEnvironmentGrid,
   setConflictGrid,
@@ -79,7 +83,9 @@ export default function Dashboard() {
   const [scenario, setScenario] = useState<ScenarioParams>(DEFAULT_SCENARIO);
   const [uploadedLayers, setUploadedLayers] = useState<UploadedLayer[]>([]);
   const [exporting, setExporting] = useState(false);
-  const [dataMode, setDataMode] = useState<"real" | "mock" | "mixed" | "loading">("loading");
+  const [dataMode, setDataMode] = useState<
+    "real" | "mock" | "mixed" | "loading"
+  >("loading");
   const [villages, setVillages] = useState<Village[]>(VILLAGES);
 
   // ── Load real satellite data on mount ──────────────────
@@ -104,7 +110,7 @@ export default function Dashboard() {
       if (envData) {
         setEnvironmentGrid(envData);
         console.log(
-          `[HerdWatch] Loaded real satellite data: ${envData.cells.length} grid cells from ${Object.keys(envData.metadata.sources).length} sources`
+          `[HerdWatch] Loaded real satellite data: ${envData.cells.length} grid cells from ${Object.keys(envData.metadata.sources).length} sources`,
         );
       }
 
@@ -118,20 +124,25 @@ export default function Dashboard() {
       if (conflictData) {
         setConflictGrid(conflictData);
         console.log(
-          `[HerdWatch] Loaded real conflict data: ${conflictData.events.length} events`
+          `[HerdWatch] Loaded real conflict data: ${conflictData.events.length} events`,
         );
       }
 
       // Load villages from HDX/OSM local GeoJSON when available.
       const villagesPayload =
-        villageRes.status === "fulfilled" && villageRes.value && !villageRes.value.error
-          ? (villageRes.value as { villages: Village[]; metadata?: { source?: string } })
+        villageRes.status === "fulfilled" &&
+        villageRes.value &&
+        !villageRes.value.error
+          ? (villageRes.value as {
+              villages: Village[];
+              metadata?: { source?: string };
+            })
           : null;
       if (villagesPayload?.villages?.length) {
         setVillagesData(villagesPayload.villages);
         setVillages(villagesPayload.villages);
         console.log(
-          `[HerdWatch] Loaded villages: ${villagesPayload.villages.length} points (${villagesPayload.metadata?.source ?? "unknown source"})`
+          `[HerdWatch] Loaded villages: ${villagesPayload.villages.length} points (${villagesPayload.metadata?.source ?? "unknown source"})`,
         );
       }
 
@@ -169,7 +180,7 @@ export default function Dashboard() {
   const allHerds = useMemo(
     () => simulateHerds(baseDay, FORECAST_DAYS, scenario),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [scenario, dataMode]
+    [scenario, dataMode],
   );
 
   // Herds at the selected day offset
@@ -192,29 +203,30 @@ export default function Dashboard() {
   const { alerts, riskZones, alternativeRoutes, suggestedActions } = useMemo(
     () => detectRisks(allHerds, baseDay, scenario),
     // allHerds already depends on dataMode transitively, but listing for clarity
-    [allHerds, scenario, villages]
+    [allHerds, scenario, villages],
   );
 
   // Environment heatmap (CSI-based: green = high suitability, red = low)
   // dataMode included as dependency so heatmap recomputes once real satellite data loads
   const envCells = useMemo(
-    () => generateEnvironmentGridWithCSI({ ...scenario, day: baseDay + dayOffset }, 0.3),
+    () =>
+      generateEnvironmentGridWithCSI(
+        { ...scenario, day: baseDay + dayOffset },
+        0.3,
+      ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [scenario, dayOffset, dataMode]
+    [scenario, dayOffset, dataMode],
   );
 
   // ── Day selection handler (supports -1 sentinel from autoplay) ──
-  const handleDaySelect = useCallback(
-    (day: number) => {
-      if (day === -1) {
-        // Autoplay advance: cycle through days
-        setDayOffset((d) => (d >= FORECAST_DAYS ? 0 : d + 1));
-      } else {
-        setDayOffset(day);
-      }
-    },
-    []
-  );
+  const handleDaySelect = useCallback((day: number) => {
+    if (day === -1) {
+      // Autoplay advance: cycle through days
+      setDayOffset((d) => (d >= FORECAST_DAYS ? 0 : d + 1));
+    } else {
+      setDayOffset(day);
+    }
+  }, []);
 
   // ── Upload handlers ───────────────────────────────────
   const handleLayerAdd = useCallback((layer: UploadedLayer) => {
@@ -222,7 +234,7 @@ export default function Dashboard() {
   }, []);
   const handleLayerToggle = useCallback((id: string) => {
     setUploadedLayers((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, visible: !l.visible } : l))
+      prev.map((l) => (l.id === id ? { ...l, visible: !l.visible } : l)),
     );
   }, []);
   const handleLayerRemove = useCallback((id: string) => {
@@ -232,36 +244,52 @@ export default function Dashboard() {
   // ── Export handlers ───────────────────────────────────
   const handleExportPNG = useCallback(async () => {
     setExporting(true);
-    try { await exportMapPNG(".leaflet-container", "herdwatch-map.png"); }
-    finally { setExporting(false); }
+    try {
+      await exportMapPNG(".leaflet-container", "herdwatch-map.png");
+    } finally {
+      setExporting(false);
+    }
   }, []);
 
   const handleExportPDF = useCallback(async () => {
     setExporting(true);
     try {
-      const dayLabel = dayOffset === 0 ? "Today" : `Day ${dayOffset} prediction`;
+      const dayLabel =
+        dayOffset === 0 ? "Today" : `Day ${dayOffset} prediction`;
       await exportPDFSummary(
         "HerdWatch Simulator – Jonglei–Bor–Sudd Corridor",
         `${dayLabel}. Herds: ${herdsAtDay.length}. Alerts: ${alerts.length}. ` +
-        `Scenario: rainfall ${scenario.rainfallAnomaly}, drought ${scenario.droughtSeverity}, flood ${scenario.floodExtent}. ` +
-        `Environmental signals only; no GPS or individual tracking.`,
-        "herdwatch-summary.pdf"
+          `Scenario: rainfall ${scenario.rainfallAnomaly}, drought ${scenario.droughtSeverity}, flood ${scenario.floodExtent}. ` +
+          `Environmental signals only; no GPS or individual tracking.`,
+        "herdwatch-summary.pdf",
       );
-    } finally { setExporting(false); }
+    } finally {
+      setExporting(false);
+    }
   }, [dayOffset, herdsAtDay.length, alerts.length, scenario]);
 
   const handleExportGeoJSON = useCallback(() => {
     const features = herdsAtDay.map((h) => ({
       type: "Feature" as const,
-      properties: { id: h.id, size: h.size, confidence: h.confidence, speed: h.speedKmDay },
+      properties: {
+        id: h.id,
+        size: h.size,
+        confidence: h.confidence,
+        speed: h.speedKmDay,
+      },
       geometry: { type: "Point" as const, coordinates: [h.lng, h.lat] },
     }));
     const geojson = {
       type: "FeatureCollection",
       features,
-      metadata: { description: "HerdWatch Simulator – environmental signals only", notFor: "enforcement or military use" },
+      metadata: {
+        description: "HerdWatch Simulator – environmental signals only",
+        notFor: "enforcement or military use",
+      },
     };
-    const blob = new Blob([JSON.stringify(geojson, null, 2)], { type: "application/geo+json" });
+    const blob = new Blob([JSON.stringify(geojson, null, 2)], {
+      type: "application/geo+json",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -273,9 +301,12 @@ export default function Dashboard() {
   const handleExportFieldBriefing = useCallback(async () => {
     setExporting(true);
     try {
-      const dayLabel = dayOffset === 0 ? "Today" : `Day ${dayOffset} prediction`;
+      const dayLabel =
+        dayOffset === 0 ? "Today" : `Day ${dayOffset} prediction`;
       await exportFieldBriefing(dayLabel, herdsAtDay, alerts, scenario);
-    } finally { setExporting(false); }
+    } finally {
+      setExporting(false);
+    }
   }, [dayOffset, herdsAtDay, alerts, scenario]);
 
   // ── Mobile drawer state ──────────────────────────────
@@ -301,7 +332,10 @@ export default function Dashboard() {
 
   // ── Render ────────────────────────────────────────────
   return (
-    <div className="relative w-full overflow-hidden bg-surface-900" style={{ height: "100dvh" }}>
+    <div
+      className="relative w-full overflow-hidden bg-surface-900"
+      style={{ height: "100dvh" }}
+    >
       {/* Map — full viewport so Leaflet gets valid dimensions */}
       <div className="absolute inset-0 z-0" aria-hidden="false">
         <MapView
@@ -335,12 +369,25 @@ export default function Dashboard() {
           {/* Mobile: alerts drawer toggle */}
           <button
             type="button"
-            onClick={() => { setLeftOpen((o) => !o); setRightOpen(false); }}
+            onClick={() => {
+              setLeftOpen((o) => !o);
+              setRightOpen(false);
+            }}
             className="relative flex-shrink-0 rounded-lg p-1.5 text-gray-400 hover:bg-white/10 hover:text-white lg:hidden"
             aria-label="Toggle alerts panel"
           >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+              />
             </svg>
             {alerts.some((a) => a.riskLevel === "high") && (
               <span className="absolute right-1 top-1 h-2 w-2 animate-pulse rounded-full bg-red-500" />
@@ -349,7 +396,9 @@ export default function Dashboard() {
 
           <h1 className="min-w-0 truncate text-base font-semibold text-white lg:text-lg">
             HerdWatch
-            <span className="ml-2 hidden text-sm font-normal text-gray-400 md:inline">· Jonglei–Bor–Sudd Corridor</span>
+            <span className="ml-2 hidden text-sm font-normal text-gray-400 md:inline">
+              · Jonglei–Bor–Sudd Corridor
+            </span>
           </h1>
 
           <div className="flex flex-shrink-0 items-center gap-2 lg:gap-3">
@@ -359,7 +408,9 @@ export default function Dashboard() {
             >
               Spec-only map
             </a>
-            <span className={`inline-block h-2 w-2 rounded-full ${alerts.some((a) => a.riskLevel === "high") ? "animate-pulse bg-red-500" : alerts.length > 0 ? "bg-amber-500" : "bg-green-500"}`} />
+            <span
+              className={`inline-block h-2 w-2 rounded-full ${alerts.some((a) => a.riskLevel === "high") ? "animate-pulse bg-red-500" : alerts.length > 0 ? "bg-amber-500" : "bg-green-500"}`}
+            />
             <span className="hidden text-xs text-gray-400 md:inline">
               {alerts.filter((a) => a.riskLevel === "high").length} critical ·{" "}
               {alerts.filter((a) => a.riskLevel === "medium").length} warnings
@@ -379,12 +430,25 @@ export default function Dashboard() {
             {/* Mobile: controls drawer toggle */}
             <button
               type="button"
-              onClick={() => { setRightOpen((o) => !o); setLeftOpen(false); }}
+              onClick={() => {
+                setRightOpen((o) => !o);
+                setLeftOpen(false);
+              }}
               className="relative flex-shrink-0 rounded-lg p-1.5 text-gray-400 hover:bg-white/10 hover:text-white lg:hidden"
               aria-label="Toggle controls panel"
             >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+                />
               </svg>
             </button>
           </div>
@@ -413,15 +477,27 @@ export default function Dashboard() {
       >
         {/* Mobile drawer header */}
         <div className="flex flex-shrink-0 items-center justify-between border-b border-white/10 px-4 py-3 lg:hidden">
-          <h2 className="text-sm font-semibold text-white">Alerts & Notifications</h2>
+          <h2 className="text-sm font-semibold text-white">
+            Alerts & Notifications
+          </h2>
           <button
             type="button"
             onClick={() => setLeftOpen(false)}
             className="rounded-full p-1 text-gray-400 hover:bg-white/10 hover:text-white"
             aria-label="Close alerts panel"
           >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -445,22 +521,33 @@ export default function Dashboard() {
       >
         {/* Mobile drawer header */}
         <div className="flex flex-shrink-0 items-center justify-between border-b border-white/10 px-4 py-3 lg:hidden">
-          <h2 className="text-sm font-semibold text-white">Controls & Layers</h2>
+          <h2 className="text-sm font-semibold text-white">
+            Controls & Layers
+          </h2>
           <button
             type="button"
             onClick={() => setRightOpen(false)}
             className="rounded-full p-1 text-gray-400 hover:bg-white/10 hover:text-white"
             aria-label="Close controls panel"
           >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
-        {/* Scrollable content */}
+        {/* Scrollable content — static controls first, dynamic results below */}
         <div className="touch-scroll flex flex-1 flex-col gap-4 overflow-y-auto p-4 pb-safe">
-          <SuggestedActionsPanel actions={suggestedActions} />
-          <CSIModelPanel herds={allHerds} />
+          {/* ── Static controls (won't change size while interacting) ── */}
           <LayerToggles
             herds={showHerds}
             trails={showTrails}
@@ -485,7 +572,10 @@ export default function Dashboard() {
             onVillages={setShowVillages}
             onConflictZones={setShowConflictZones}
           />
-          <ScenarioPanel scenario={scenario} onChange={(p) => setScenario((s) => ({ ...s, ...p }))} />
+          <ScenarioPanel
+            scenario={scenario}
+            onChange={(p) => setScenario((s) => ({ ...s, ...p }))}
+          />
           <DataUploadPanel
             layers={uploadedLayers}
             onLayerAdd={handleLayerAdd}
@@ -499,6 +589,12 @@ export default function Dashboard() {
             onExportFieldBriefing={handleExportFieldBriefing}
             exporting={exporting}
           />
+
+          {/* ── Dynamic results (content changes with simulation) ── */}
+          <div className="border-t border-white/10 pt-4">
+            <CSIModelPanel herds={allHerds} />
+          </div>
+          <SuggestedActionsPanel actions={suggestedActions} />
           <EthicsDisclaimer />
         </div>
       </aside>
@@ -511,20 +607,42 @@ export default function Dashboard() {
           onClick={() => setTimelineOpen((o) => !o)}
           className="mb-1 flex w-full items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-surface-800/95 px-3 py-1.5 backdrop-blur transition hover:bg-surface-700/95 lg:hidden"
         >
-          <svg className={`h-3 w-3 text-gray-400 transition-transform duration-200 ${timelineOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          <svg
+            className={`h-3 w-3 text-gray-400 transition-transform duration-200 ${timelineOpen ? "rotate-180" : ""}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2.5}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M19 9l-7 7-7-7"
+            />
           </svg>
           <span className="text-[10px] font-medium text-gray-400">
-            {timelineOpen ? "Hide timeline" : `Timeline · ${dayOffset === 0 ? "Now" : `Day ${dayOffset}`}`}
+            {timelineOpen
+              ? "Hide timeline"
+              : `Timeline · ${dayOffset === 0 ? "Now" : `Day ${dayOffset}`}`}
           </span>
           {!timelineOpen && (
-            <span className={`ml-1 inline-block h-1.5 w-1.5 rounded-full ${
-              dayOffset === 0 ? "bg-emerald-400" : dayOffset <= 3 ? "bg-green-400" : dayOffset <= 5 ? "bg-amber-400" : "bg-red-400"
-            }`} />
+            <span
+              className={`ml-1 inline-block h-1.5 w-1.5 rounded-full ${
+                dayOffset === 0
+                  ? "bg-emerald-400"
+                  : dayOffset <= 3
+                    ? "bg-green-400"
+                    : dayOffset <= 5
+                      ? "bg-amber-400"
+                      : "bg-red-400"
+              }`}
+            />
           )}
         </button>
         {/* Timeline panel — always visible on desktop, toggleable on mobile */}
-        <div className={`${timelineOpen ? "block" : "hidden"} rounded-lg border border-white/10 bg-surface-800/95 px-3 py-2 backdrop-blur lg:block lg:px-5 lg:py-3`}>
+        <div
+          className={`${timelineOpen ? "block" : "hidden"} rounded-lg border border-white/10 bg-surface-800/95 px-3 py-2 backdrop-blur lg:block lg:px-5 lg:py-3`}
+        >
           <TimeSlider
             dayOffset={dayOffset}
             maxDays={FORECAST_DAYS}
@@ -536,42 +654,80 @@ export default function Dashboard() {
       </div>
 
       {/* ── Legend — collapsible on mobile ───────────────── */}
-      <div className={`absolute left-3 z-10 lg:bottom-36 lg:left-80 lg:ml-4 ${timelineOpen ? "bottom-[7.5rem]" : "bottom-[3.5rem]"} transition-all duration-200`}>
+      <div
+        className={`absolute left-3 z-10 lg:bottom-36 lg:left-80 lg:ml-4 ${timelineOpen ? "bottom-[7.5rem]" : "bottom-[3.5rem]"} transition-all duration-200`}
+      >
         {/* Toggle button — all screen sizes */}
         <button
           type="button"
           onClick={() => setLegendOpen((o) => !o)}
           className="mb-1 flex items-center gap-1.5 rounded border border-white/10 bg-surface-800/95 px-2 py-1 text-[10px] text-gray-400 backdrop-blur transition hover:bg-surface-700/95 hover:text-gray-300 lg:px-2.5 lg:text-xs"
         >
-          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+          <svg
+            className="h-3 w-3"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+            />
           </svg>
           {legendOpen ? "Hide legend" : "Legend"}
-          <svg className={`h-3 w-3 transition-transform duration-200 ${legendOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          <svg
+            className={`h-3 w-3 transition-transform duration-200 ${legendOpen ? "rotate-180" : ""}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2.5}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M19 9l-7 7-7-7"
+            />
           </svg>
         </button>
-        <div className={`${legendOpen ? "block" : "hidden"} rounded border border-white/10 bg-surface-800/95 px-2 py-1.5 backdrop-blur lg:px-3 lg:py-2`}>
+        <div
+          className={`${legendOpen ? "block" : "hidden"} rounded border border-white/10 bg-surface-800/95 px-2 py-1.5 backdrop-blur lg:px-3 lg:py-2`}
+        >
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-gray-400 lg:text-xs lg:gap-y-1.5">
             <span className="w-full font-medium text-gray-300">Map legend</span>
-            <span className="w-full text-[9px] text-emerald-400/90 lg:text-[10px]">Heatmap = CSI (8 factors, spec)</span>
-            <span className="flex items-center gap-1">
-              <span className="inline-block h-2 w-2 rounded-full bg-green-500 lg:h-2.5 lg:w-2.5" /> Herd
+            <span className="w-full text-[9px] text-emerald-400/90 lg:text-[10px]">
+              Heatmap = CSI (8 factors, spec)
             </span>
             <span className="flex items-center gap-1">
-              <span className="block h-0.5 w-3 lg:w-4" style={{ borderBottom: "2px dashed #3b82f6" }} /> Predicted
+              <span className="inline-block h-2 w-2 rounded-full bg-green-500 lg:h-2.5 lg:w-2.5" />{" "}
+              Herd
             </span>
             <span className="flex items-center gap-1">
-              <span className="h-2.5 w-2.5 rounded-full border-2 border-red-500 bg-red-500/20 lg:h-3 lg:w-3" /> Risk
+              <span
+                className="block h-0.5 w-3 lg:w-4"
+                style={{ borderBottom: "2px dashed #3b82f6" }}
+              />{" "}
+              Predicted
             </span>
             <span className="flex items-center gap-1">
-              <span className="block h-0.5 w-3 lg:w-4" style={{ borderBottom: "2px dashed #eab308" }} /> Alt. route
+              <span className="h-2.5 w-2.5 rounded-full border-2 border-red-500 bg-red-500/20 lg:h-3 lg:w-3" />{" "}
+              Risk
             </span>
             <span className="flex items-center gap-1">
-              <span className="h-2 w-2 rounded-full bg-blue-500 lg:h-2.5 lg:w-2.5" /> Peacekeeping
+              <span
+                className="block h-0.5 w-3 lg:w-4"
+                style={{ borderBottom: "2px dashed #eab308" }}
+              />{" "}
+              Alt. route
             </span>
             <span className="flex items-center gap-1">
-              <span className="inline-block h-2 w-2 rounded-full bg-sky-400 lg:h-2.5 lg:w-2.5" /> Water
+              <span className="h-2 w-2 rounded-full bg-blue-500 lg:h-2.5 lg:w-2.5" />{" "}
+              Peacekeeping
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-2 w-2 rounded-full bg-sky-400 lg:h-2.5 lg:w-2.5" />{" "}
+              Water
             </span>
           </div>
         </div>
