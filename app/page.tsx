@@ -281,7 +281,8 @@ export default function Dashboard() {
   // ── Mobile drawer state ──────────────────────────────
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
-  const [legendOpen, setLegendOpen] = useState(false);
+  const [legendOpen, setLegendOpen] = useState(false); // collapsed by default on all screens
+  const [timelineOpen, setTimelineOpen] = useState(true);
 
   // Lock body scroll when a drawer is open (mobile only)
   useEffect(() => {
@@ -504,7 +505,26 @@ export default function Dashboard() {
 
       {/* ── BOTTOM — Timeline slider (responsive) ──────── */}
       <div className="absolute bottom-3 left-3 right-3 z-10 lg:bottom-4 lg:left-80 lg:right-72 lg:mx-4">
-        <div className="rounded-lg border border-white/10 bg-surface-800/95 px-3 py-2 backdrop-blur lg:px-5 lg:py-3">
+        {/* Mobile: toggle bar to show/hide timeline */}
+        <button
+          type="button"
+          onClick={() => setTimelineOpen((o) => !o)}
+          className="mb-1 flex w-full items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-surface-800/95 px-3 py-1.5 backdrop-blur transition hover:bg-surface-700/95 lg:hidden"
+        >
+          <svg className={`h-3 w-3 text-gray-400 transition-transform duration-200 ${timelineOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+          <span className="text-[10px] font-medium text-gray-400">
+            {timelineOpen ? "Hide timeline" : `Timeline · ${dayOffset === 0 ? "Now" : `Day ${dayOffset}`}`}
+          </span>
+          {!timelineOpen && (
+            <span className={`ml-1 inline-block h-1.5 w-1.5 rounded-full ${
+              dayOffset === 0 ? "bg-emerald-400" : dayOffset <= 3 ? "bg-green-400" : dayOffset <= 5 ? "bg-amber-400" : "bg-red-400"
+            }`} />
+          )}
+        </button>
+        {/* Timeline panel — always visible on desktop, toggleable on mobile */}
+        <div className={`${timelineOpen ? "block" : "hidden"} rounded-lg border border-white/10 bg-surface-800/95 px-3 py-2 backdrop-blur lg:block lg:px-5 lg:py-3`}>
           <TimeSlider
             dayOffset={dayOffset}
             maxDays={FORECAST_DAYS}
@@ -516,19 +536,22 @@ export default function Dashboard() {
       </div>
 
       {/* ── Legend — collapsible on mobile ───────────────── */}
-      <div className="absolute bottom-[4.5rem] left-3 z-10 lg:bottom-24 lg:left-80 lg:ml-4">
-        {/* Mobile: toggle button */}
+      <div className={`absolute left-3 z-10 lg:bottom-36 lg:left-80 lg:ml-4 ${timelineOpen ? "bottom-[7.5rem]" : "bottom-[3.5rem]"} transition-all duration-200`}>
+        {/* Toggle button — all screen sizes */}
         <button
           type="button"
           onClick={() => setLegendOpen((o) => !o)}
-          className="mb-1 flex items-center gap-1 rounded border border-white/10 bg-surface-800/95 px-2 py-1 text-[10px] text-gray-400 backdrop-blur transition hover:text-gray-300 lg:hidden"
+          className="mb-1 flex items-center gap-1.5 rounded border border-white/10 bg-surface-800/95 px-2 py-1 text-[10px] text-gray-400 backdrop-blur transition hover:bg-surface-700/95 hover:text-gray-300 lg:px-2.5 lg:text-xs"
         >
           <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
           </svg>
           {legendOpen ? "Hide legend" : "Legend"}
+          <svg className={`h-3 w-3 transition-transform duration-200 ${legendOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
         </button>
-        <div className={`${legendOpen ? "block" : "hidden"} rounded border border-white/10 bg-surface-800/95 px-2 py-1.5 backdrop-blur lg:block lg:px-3 lg:py-2`}>
+        <div className={`${legendOpen ? "block" : "hidden"} rounded border border-white/10 bg-surface-800/95 px-2 py-1.5 backdrop-blur lg:px-3 lg:py-2`}>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-gray-400 lg:text-xs lg:gap-y-1.5">
             <span className="w-full font-medium text-gray-300">Map legend</span>
             <span className="w-full text-[9px] text-emerald-400/90 lg:text-[10px]">Heatmap = CSI (8 factors, spec)</span>
