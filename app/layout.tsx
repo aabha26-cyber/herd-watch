@@ -47,7 +47,7 @@ export default function RootLayout({
   // #endregion
   return (
     <html lang="en" className="dark">
-      <body className="min-h-screen bg-surface-900 text-gray-200 antialiased">
+      <body className="h-full overflow-hidden bg-surface-900 text-gray-200 antialiased">
         {children}
       </body>
     </html>

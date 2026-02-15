@@ -301,9 +301,9 @@ export default function Dashboard() {
 
   // ── Render ────────────────────────────────────────────
   return (
-    <div className="relative h-screen w-full overflow-hidden bg-surface-900" style={{ minHeight: "100vh", height: "100vh" }}>
+    <div className="relative w-full overflow-hidden bg-surface-900" style={{ height: "100dvh" }}>
       {/* Map — full viewport so Leaflet gets valid dimensions */}
-      <div className="absolute inset-0 z-0" style={{ width: "100%", height: "100%", minHeight: "100vh" }} aria-hidden="false">
+      <div className="absolute inset-0 z-0" aria-hidden="false">
         <MapView
           herds={herdsAtDay}
           showHerds={showHerds}

@@ -11,6 +11,9 @@
 html,
 body {
   height: 100%;
+  height: 100dvh; /* dynamic viewport height — respects mobile browser chrome */
+  max-height: 100dvh;
+  overflow: hidden;
   background: var(--map-bg);
 }
 
