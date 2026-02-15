@@ -22,10 +22,7 @@ import {
   type DayScenario,
 } from "./environment";
 import { getConflictRiskScoreAt } from "./data/realFactors";
-import {
-  getRiskThresholdProfile,
-  type RiskCategory,
-} from "./risk-config";
+import { getRiskThresholdProfile, type RiskCategory } from "./risk-config";
 import { FARMS } from "./pois";
 
 // ── Types ─────────────────────────────────────────────────
@@ -247,7 +244,7 @@ export function detectRisks(
           reasons.push(
             acledConflict !== null
               ? "recent ACLED conflict activity"
-              : "historically conflict-prone area"
+              : "historically conflict-prone area",
           );
 
         // Location name
@@ -317,7 +314,7 @@ export function detectRisks(
         riskZones.push({
           lat: midLat,
           lng: midLng,
-          radiusKm: 15,
+          radiusKm: 20,
           riskLevel,
           alertId,
         });

@@ -1,10 +1,17 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "HerdWatch Simulator | Jonglei–Bor–Sudd Corridor",
   description:
     "Satellite-powered ethical AI platform for cattle presence heat maps and early-warning simulation. Environmental signal analysis for prevention.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

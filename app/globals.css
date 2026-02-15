@@ -22,3 +22,34 @@ body {
   background: none !important;
   border: none !important;
 }
+
+/* ── Mobile helpers ─────────────────────────── */
+
+/* Smooth momentum scrolling on touch devices */
+.touch-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Safe-area bottom padding for devices with home indicators */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* Prevent body scroll when a mobile drawer is open */
+body.drawer-open {
+  overflow: hidden;
+  touch-action: none;
+}
+
+/* Mobile drawer backdrop transition */
+.backdrop-fade-enter {
+  animation: fadeIn 200ms ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
